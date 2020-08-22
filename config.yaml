@@ -1,0 +1,6 @@
+host: localhost
+port: 6261
+
+cache:
+  expiresInSec: 120
+  purgesEverySec: 240
