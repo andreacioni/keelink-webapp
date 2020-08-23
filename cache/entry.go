@@ -5,9 +5,10 @@ import (
 )
 
 type CacheEntry struct {
-	IP        string
-	SessionID string
-	PublicKey string
+	IP                string
+	SessionID         string
+	PublicKey         string
+	EncryptedPassword string
 }
 
 func (c CacheEntry) IsEmpty() {

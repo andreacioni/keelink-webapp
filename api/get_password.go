@@ -5,12 +5,13 @@ import (
 	"net/http"
 )
 
-func getPublicKey(c *gin.Context) {
+func GetPasswordForSessionID(c *gin.Context) {
 	entry, found := getEntryFromSessionID(c)
 
 	if !found {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": true, "message": entry.PublicKey})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": entry.EncryptedPassword})
+
 }
