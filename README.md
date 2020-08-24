@@ -1,2 +1,2 @@
-# keelink-service
-A GoLang implementation of the service behind https://keelink.cloud
+# keelink-service [WIP]
+A GoLang implementation that will replace the PHP implementation of: https://keelink.cloud site
