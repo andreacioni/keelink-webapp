@@ -59,7 +59,7 @@ func Init(shutdownHook func()) error {
 		group.Handle(handler.method, path, append(handler.m, handler.f)...)
 	}
 
-	if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%d", conf.Host, conf.Port), conf); err != nil {
+	if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%s", ":", os.Getenv("PORT")), conf); err != nil {
 		return fmt.Errorf("unable to listen & serve: %v", err)
 	}
 

@@ -1,6 +1,3 @@
-host: "0.0.0.0"
-port: 80
-
 cache:
   expiresInSec: 120
   purgesEverySec: 240
