@@ -32,6 +32,7 @@ var handlersMap = map[string]MethodHandler{
 	"getpublickey.php":  {method: http.MethodGet, f: getPublicKey},
 	"getcredforsid.php": {method: http.MethodGet, f: getCredForSid},
 	"updatepsw.php":     {method: http.MethodPost, f: postPassword},
+	"updatecred.php":    {method: http.MethodPost, f: postUsernameAndPassword},
 	"removeentry.php":   {method: http.MethodPost, f: deleteEntry},
 }
 
