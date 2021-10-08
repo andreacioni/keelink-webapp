@@ -10,9 +10,6 @@ import (
 )
 
 type Configuration struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-
 	//SSL
 	CertFile string `yaml:"cert"`
 	KeyFile  string `yaml:"key"`

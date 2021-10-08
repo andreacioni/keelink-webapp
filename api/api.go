@@ -38,12 +38,6 @@ var handlersMap = map[string]MethodHandler{
 func Init(shutdownHook func()) error {
 	glg.Info("Initializing REST API ...")
 
-	conf := config.GetConfig()
-
-	if conf.Host == "" || conf.Port <= 0 {
-		return fmt.Errorf("address and/or port not defined in configuration")
-	}
-
 	var group *gin.RouterGroup
 	router := gin.Default()
 	group = router.Group("/")
@@ -59,7 +53,7 @@ func Init(shutdownHook func()) error {
 		group.Handle(handler.method, path, append(handler.m, handler.f)...)
 	}
 
-	if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%s", ":", os.Getenv("PORT")), conf); err != nil {
+	if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%s", ":", os.Getenv("PORT")), config.GetConfig()); err != nil {
 		return fmt.Errorf("unable to listen & serve: %v", err)
 	}
 
