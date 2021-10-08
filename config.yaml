@@ -1,5 +1,5 @@
-host: localhost
-port: 6261
+host: ":"
+port: 80
 
 cache:
   expiresInSec: 120
