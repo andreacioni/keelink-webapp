@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/kpango/glg"
-	"net/http"
 )
 
 func postPassword(c *gin.Context) {
@@ -15,6 +16,7 @@ func postPassword(c *gin.Context) {
 	}
 
 	psw := c.PostForm("key")
+	username := c.PostForm("username")
 
 	if psw == "" {
 		glg.Errorf("Invalid password supplied", entry.SessionID)
@@ -29,12 +31,7 @@ func postPassword(c *gin.Context) {
 	}
 
 	entry.EncryptedPassword = psw
-
-	if entry.EncryptedPassword == "" {
-		glg.Errorf("There is already a password set for current session ID: %s", entry.SessionID)
-		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Password already set"})
-		return
-	}
+	entry.Username = &username
 
 	if err := cache.Update(entry); err != nil {
 		glg.Errorf("Cannot update: %v", err)

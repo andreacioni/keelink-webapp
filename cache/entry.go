@@ -8,6 +8,7 @@ type CacheEntry struct {
 	IP                string
 	SessionID         string
 	PublicKey         string
+	Username          *string `binding:"exists"`
 	EncryptedPassword string
 }
 

@@ -5,13 +5,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/andreacioni/keelink-service/cache"
-	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"time"
+
+	"github.com/andreacioni/keelink-service/cache"
+	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kpango/glg"
@@ -27,10 +28,11 @@ type MethodHandler struct {
 }
 
 var handlersMap = map[string]MethodHandler{
-	"init.php":         {method: http.MethodPost, f: postInit},
-	"getpublickey.php": {method: http.MethodGet, f: getPublicKey},
-	"updatepsw.php": {method: http.MethodPost, f: postPassword},
-	"removeentry.php": {method: http.MethodPost, f: deleteEntry},
+	"init.php":          {method: http.MethodPost, f: postInit},
+	"getpublickey.php":  {method: http.MethodGet, f: getPublicKey},
+	"getcredforsid.php": {method: http.MethodGet, f: getCredForSid},
+	"updatepsw.php":     {method: http.MethodPost, f: postPassword},
+	"removeentry.php":   {method: http.MethodPost, f: deleteEntry},
 }
 
 func Init(shutdownHook func()) error {
@@ -39,7 +41,7 @@ func Init(shutdownHook func()) error {
 	conf := config.GetConfig()
 
 	if conf.Host == "" || conf.Port <= 0 {
-		return fmt.Errorf("Address and/or port not defined in configuration")
+		return fmt.Errorf("address and/or port not defined in configuration")
 	}
 
 	var group *gin.RouterGroup
@@ -108,7 +110,7 @@ func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) 
 		return
 	}
 
-	if entry, found = cache.Get(sid); found == false {
+	if entry, found = cache.Get(sid); !found {
 		glg.Errorf("Entry not found for session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Entry not found"})
 		return
