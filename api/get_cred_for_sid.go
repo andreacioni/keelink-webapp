@@ -14,7 +14,7 @@ func getCredForSid(c *gin.Context) {
 		return
 	}
 
-	if entry.EncryptedPassword == nil || entry.Username == nil {
+	if entry.EncryptedPassword == nil && entry.Username == nil {
 		glg.Errorf("Credentials not yet received for session ID: %s", entry.SessionID)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Credentials not yet received"})
 		return
