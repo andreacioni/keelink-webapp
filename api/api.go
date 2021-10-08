@@ -48,6 +48,13 @@ func Init(shutdownHook func()) error {
 	router := gin.Default()
 	group = router.Group("/")
 
+	group.Static("/css", "./static/css")
+	group.Static("/fonts", "./staticfonts")
+	group.Static("/images", "./static/images")
+	group.Static("/lib", "./static/lib")
+	group.StaticFile("/", "./static/index.html")
+	group.StaticFile("/privacy-policy.html", "./static/privacy-policy.html")
+
 	for path, handler := range handlersMap {
 		group.Handle(handler.method, path, append(handler.m, handler.f)...)
 	}
@@ -103,6 +110,10 @@ func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) 
 	c.Request.Method = "POST" //TODO - workaround: PostForm doesn'T parse a request if the method is not "POST"
 
 	sid := c.PostForm("sid")
+
+	if sid == "" {
+		sid = c.Query("sid")
+	}
 
 	if err := validateMD5(sid); err != nil {
 		glg.Errorf("Invalid MD5 string: %s", sid)

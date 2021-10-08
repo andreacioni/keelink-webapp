@@ -9,7 +9,7 @@ type CacheEntry struct {
 	SessionID         string
 	PublicKey         string
 	Username          *string `binding:"exists"`
-	EncryptedPassword string
+	EncryptedPassword *string `binding:"exists"`
 }
 
 func (c CacheEntry) IsEmpty() {

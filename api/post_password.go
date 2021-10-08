@@ -19,18 +19,18 @@ func postPassword(c *gin.Context) {
 	username := c.PostForm("username")
 
 	if psw == "" {
-		glg.Errorf("Invalid password supplied", entry.SessionID)
+		glg.Errorf("Invalid password supplied: %s", entry.SessionID)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Invalid password supplied"})
 		return
 	}
 
-	if entry.EncryptedPassword != "" {
+	if entry.EncryptedPassword != nil {
 		glg.Errorf("There is already a password set for current session ID: %s", entry.SessionID)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Password already set"})
 		return
 	}
 
-	entry.EncryptedPassword = psw
+	entry.EncryptedPassword = &psw
 	entry.Username = &username
 
 	if err := cache.Update(entry); err != nil {
