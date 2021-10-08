@@ -2,11 +2,14 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/andreacioni/keelink-service/api"
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/andreacioni/keelink-service/config"
 	"github.com/kpango/glg"
-	"os"
+
+	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 var (
