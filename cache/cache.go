@@ -2,9 +2,10 @@ package cache
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/andreacioni/keelink-service/config"
 	"github.com/patrickmn/go-cache"
-	"time"
 )
 
 var (
@@ -37,7 +38,7 @@ func Update(entry CacheEntry) error {
 
 func Remove(entry CacheEntry) error {
 	if _, found := c.Get(entry.SessionID); !found {
-		return fmt.Errorf("Entry not found")
+		return fmt.Errorf("entry not found")
 	}
 
 	c.Delete(entry.SessionID)
