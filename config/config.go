@@ -2,17 +2,18 @@ package config
 
 import (
 	"io/ioutil"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/kpango/glg"
-
 	"gopkg.in/yaml.v2"
 )
 
 type Configuration struct {
-	//SSL
-	CertFile string `yaml:"cert"`
-	KeyFile  string `yaml:"key"`
+	//Network
+	Host string
+	Port int
 
 	//Cache
 	Cache Cache `yaml:"cache"`
@@ -40,13 +41,50 @@ func Load(filename string) error {
 		return err
 	}
 
-	glg.Debugf("Current config: %+v", conf)
+	glg.Debugf("current config: %+v", conf)
 
 	return nil
 }
 
+func LoadEnv() error {
+	glg.Debugf("loading configuration from environment variables ...")
+
+	conf = Configuration{
+		Host: os.Getenv("HOST"),
+		Port: parseInt(os.Getenv("PORT")),
+		Cache: Cache{
+			ExpiresInSec:   parseDuration(os.Getenv("EXPIRES_IN_SEC")),
+			PurgesEverySec: parseDuration(os.Getenv("PURGES_EVERY_SEC")),
+		},
+	}
+
+	glg.Debugf("current config: %+v", conf)
+
+	return nil
+}
+
+func parseInt(str string) int {
+	integer, err := strconv.Atoi(str)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return integer
+}
+
+func parseDuration(str string) time.Duration {
+	duration, err := time.ParseDuration(str)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return duration
+}
+
 func Unload() {
-	glg.Debug("Unloading configuration")
+	glg.Debug("unloading configuration")
 
 	conf = Configuration{}
 }

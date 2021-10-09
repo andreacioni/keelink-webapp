@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/andreacioni/keelink-service/api"
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/andreacioni/keelink-service/config"
+	"github.com/andreacioni/keelink-service/webapp"
 	"github.com/kpango/glg"
 
 	_ "github.com/heroku/x/hmetrics/onload"
@@ -23,19 +23,33 @@ func main() {
 
 	setupLogger()
 
-	if err := config.Load(configFile); err != nil {
-		glg.Errorf("Cannot parse config file: %v", err)
-		os.Exit(1)
-	}
+	loadConfig()
 
-	cache.Init()
+	cacheInit()
 
-	if err := api.Init(shutdown); err != nil {
+	if err := webapp.Serve(shutdown); err != nil {
 		glg.Errorf("Cannot startup API: %v", err)
 		os.Exit(3)
 	}
+}
 
-	glg.Info("KeeLink service is up and running!")
+func cacheInit() {
+	cache.Init()
+}
+
+func loadConfig() {
+	if configFile != "" {
+		if err := config.Load(configFile); err != nil {
+			glg.Errorf("cannot parse config file: %v", err)
+			os.Exit(1)
+		}
+	} else {
+		if err := config.LoadEnv(); err != nil {
+			glg.Errorf("cannot parse config file: %v", err)
+			os.Exit(1)
+		}
+	}
+
 }
 
 func setupLogger() {
