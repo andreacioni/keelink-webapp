@@ -57,7 +57,7 @@ func setupLogger() {
 }
 
 func parseArgs() {
-	flag.StringVar(&configFile, "c", "config.yaml", "configuration file path")
+	flag.StringVar(&configFile, "c", "", "configuration file path")
 	flag.StringVar(&logLevel, "l", "WARN", "set log level")
 
 	flag.Parse()
