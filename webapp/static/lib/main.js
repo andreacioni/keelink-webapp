@@ -42,10 +42,13 @@ function init() {
 	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
 		$("#qrplaceholder").hide();
 	} else {
+		$("#qrcode_placeholder").show()
+
 		if(!hasSavedKeyPair()) {
 			log('no previous saved keypair available in web storage')
+			//setting an interval avoid UI freeze
+			var interval = setInterval(() => $("#sidLabel").text("Generating your key pair..."), 100)
 			//generate key pair
-			var interval = setInterval(() => $("#sidLabel").text("Generating key pair..."), 100)
 			generateKeyPair().then(() => {
 				clearInterval(interval)
 				requestInit()
@@ -61,29 +64,29 @@ function init() {
 
 function requestInit() {
 	$("#sidLabel").text("Receiving...");
+	
 	log(PEMtoBase64(_crypt.getPublicKey()));
 	log(toSafeBase64(PEMtoBase64(_crypt.getPublicKey())))
-	$.post("init.php",{PUBLIC_KEY : toSafeBase64(PEMtoBase64(_crypt.getPublicKey()))},"json").done(
-		function(data) {
-			if(data.status === true) {
-				_sid = data['message'];
-				
-				if(!checkBrowserSupport()) {
-					alertError("Your browser is up to date, please use newer browser");
-				} else {
-					$("#sidLabel").text(_sid);
-					initQrCode();
-					initAsyncAjaxRequest();
-				}
+	
+	$.post("init.php",{PUBLIC_KEY : toSafeBase64(PEMtoBase64(_crypt.getPublicKey()))},"json")
+	.done(function(data) {
+		if(data.status === true) {
+			_sid = data['message'];
+			
+			if(!checkBrowserSupport()) {
+				alertError("Your browser is up to date, please use newer browser");
 			} else {
-				alertError("Cannot initialize KeeLink",data.message);
+				$("#sidLabel").text(_sid);
+				initQrCode();
+				initAsyncAjaxRequest();
 			}
+		} else {
+			alertError("Cannot initialize KeeLink",data.message);
 		}
-	).fail(
-		function() {
-			alertError("Error","Cannot initilize this service");
-		}
-	);
+	})
+	.fail(function() {
+		alertError("Error","Cannot initilize this service");
+	});
 }
 
 function generateKeyPair() {
@@ -234,6 +237,9 @@ function copiedError(btn, isClear) {
 }
 
 function initQrCode() {
+	$("#qrcode_placeholder").hide()
+	$("#qrcode").show()
+
 	var qrcode = new QRCode(document.getElementById("qrcode"), {
 		text: "ksid://" + _sid,
 		width: 200,
