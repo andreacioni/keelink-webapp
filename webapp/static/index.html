@@ -7,7 +7,11 @@
   <title>KeeLink</title>
   <meta name="title" content="KeeLink">
   <meta name="author" content="Andrea Cioni">
-    
+  
+  <!-- SEO
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="description" content="KeeLink is a Keepass2Android plug-in that allows everyone to safely share credentials between the smartphone and every other device." />
+
   <!-- Mobile Specific Metas
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,11 +41,9 @@
   <script type="text/javascript" src="lib/clipboard/clipboard.min.js"></script>
   <script type="text/javascript" src='https://www.google.com/recaptcha/api.js'></script>
 
-
-  <script type="text/javascript" src="lib/main.js"></script>
-  
+  <script type="text/javascript" src="lib/main.js" async></script>
  </head>
- <body>
+ <body onload="init()">
  	<div class="container">
 		 
 		 <!-- Navigationbar -->

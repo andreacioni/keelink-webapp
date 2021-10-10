@@ -1,5 +1,3 @@
-$(init);
-
 var DEBUG = false;
 
 var INVALIDATE_TIMEOUT_SEC = 50;
@@ -9,26 +7,21 @@ var REMINDER_DELETE_CLIPBOARD = 10000;
 var REMINDER_TITLE = "Don't forget!";
 var REMINDER_BODY = "Remember to clear your clipboard, your credentials are still there!";
 
-var DEFAULT_KEY_SIZE = 1024; //TODO test 2048 and persist on browser cache
+var LOCAL_STORAGE_PRIVATE_NAME = 'private_key';
+var LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
+var DEFAULT_KEY_SIZE = 2048;
 
 var _sid;
 var _crypt;
 var invalidateSid = false;
 var requestFinished = true;
 var pollingInterval;
-var _query_string = parseWindowURL();
+var _query_string = parseWindowURL();  
 
 function init() {
 	//Hide hosting if SelfHosted
 	if(!window.location.hostname.toLowerCase().endsWith("keelink.cloud")) {
 		$("#hostedby").hide();
-	}
-	
-	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
-		$("#qrplaceholder").hide();
-	} else {
-		generateKeyPair();
-		requestInit();
 	}
 
 	//Enable scrolling effect on anchor clicking
@@ -44,6 +37,25 @@ function init() {
 	if(_query_string && _query_string.show) {
 		$('a.navbar-link[href$="' + _query_string.show + '"').trigger('click');
 		//window.location.hash = "#" + _query_string.show;
+	}
+	
+	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
+		$("#qrplaceholder").hide();
+	} else {
+		if(!hasSavedKeyPair()) {
+			log('no previous saved keypair available in web storage')
+			//generate key pair
+			var interval = setInterval(() => $("#sidLabel").text("Generating key pair..."), 100)
+			generateKeyPair().then(() => {
+				clearInterval(interval)
+				requestInit()
+			})
+		} else {
+			log('previous keypair found, using it')
+			//load key from local storage
+			loadKeyPair()
+			requestInit()
+		}
 	}
 }
 
@@ -75,10 +87,47 @@ function requestInit() {
 }
 
 function generateKeyPair() {
-	$("#sidLabel").text("Generating key pair...");
-	_crypt = new JSEncrypt({default_key_size: DEFAULT_KEY_SIZE});
-	_crypt.getKey();
-	log(_crypt.getPublicKey());
+	return new Promise((resolve) => {
+		_crypt = new JSEncrypt({default_key_size: DEFAULT_KEY_SIZE});
+		_crypt.getKey(() => {
+			//save generated key pair on the browser internal storage
+			if (supportLocalStorage()) {
+				log('web storage available, save generated key')
+
+				localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, _crypt.getPublicKey())
+				localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, _crypt.getPrivateKey())
+			} else {
+				warn('web storage NOT available')
+			}
+
+			log(_crypt.getPublicKey());
+			resolve()
+		});
+		
+		
+	});
+}
+
+function supportLocalStorage() {
+	return typeof(Storage) !== "undefined";
+} 
+
+function hasSavedKeyPair() {
+	if(supportLocalStorage()) {
+		var privateKey = localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)
+		var publicKey = localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)
+		if(privateKey !== undefined && privateKey !== null && publicKey !== undefined && publicKey !== null) {
+			return true
+		}
+	}
+
+	return false
+}
+
+function loadKeyPair() {
+	_crypt = new JSEncrypt()
+	_crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME))
+	_crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME))
 }
 
 function parseWindowURL() {
@@ -333,6 +382,11 @@ function fromSafeBase64(safe) {
 }
 
 function log(str) {
+	if(DEBUG)
+		console.log(str);
+}
+
+function warn(str) {
 	if(DEBUG)
 		console.log(str);
 }
