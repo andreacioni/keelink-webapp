@@ -1,14 +1,14 @@
-var DEBUG = false;
+const DEBUG = false;
 
-var INVALIDATE_TIMEOUT_SEC = 50;
-var REQUEST_INTERVAL = 2000;
+const INVALIDATE_TIMEOUT_SEC = 50;
+const REQUEST_INTERVAL = 2000;
 
-var REMINDER_DELETE_CLIPBOARD = 10000;
-var REMINDER_TITLE = "Don't forget!";
-var REMINDER_BODY = "Remember to clear your clipboard, your credentials are still there!";
+const REMINDER_DELETE_CLIPBOARD = 10000;
+const REMINDER_TITLE = "Don't forget!";
+const REMINDER_BODY = "Remember to clear your clipboard, your credentials are still there!";
 
-var LOCAL_STORAGE_PRIVATE_NAME = 'private_key';
-var LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
+const LOCAL_STORAGE_PRIVATE_NAME = 'private_key';
+const LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
 var DEFAULT_KEY_SIZE = 2048;
 
 var _sid;
@@ -367,8 +367,13 @@ function invalidateSession() {
 	clearInterval(pollingInterval);
 	_sid = null;
 	$("#sidLabel").css("text-decoration", "line-through");
-	$("#qrcode").css("filter", "blur(2px)");
-	$("#qrcode").css("-webkit-filter", "blur(2px)");
+
+	$("#qr_code_overlay_icon").show()
+	$("#qrcode_placeholder > img:nth-child(1)").addClass("img-blur")
+	$("#qrcode_placeholder").show()
+
+	$("#qrcode").hide()
+
 }
 
 function refreshPage(){
