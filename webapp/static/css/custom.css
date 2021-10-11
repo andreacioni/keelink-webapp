@@ -4,23 +4,6 @@
   margin-top: 10px;
 }
 
-.img-blur {
-  filter: blur(2px);
-  -webkit-filter: blur(2px);
-}
-
-.img-overlay-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-shadow: 0 0 3px #fff;
-}
-
-.img-overlay-icon a {
-  color: black;
-}
-
 #qrcode {
   transition-property: opacity;
   transition-duration: 1.15s;
@@ -32,8 +15,8 @@
   transition-delay: 0s;
   opacity: 0;
   z-index: 1; 
-  height: 200px;
-  width: 200px;
+  height: 220px;
+  width: 220px;
 }
 
 #qrcode img {

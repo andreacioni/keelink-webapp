@@ -347,7 +347,6 @@ function onSuccess(data,textStatus,jqXhr) {
 				button: "Copy",
 			}).then((value)=>{
 				initClipboardButtons(decryptedUsername, decryptedPsw, value);
-				$.post("removeentry.php",{'sid':_sid},function(){},"json");
 				invalidateSession();
 			});
 		} else {
@@ -365,15 +364,12 @@ function onFail(data,textStatus,jqXhr) {
 function invalidateSession() {
 	invalidateSid = true;
 	clearInterval(pollingInterval);
+	$.post("removeentry.php",{'sid':_sid},function(){},"json");
 	_sid = null;
 	$("#sidLabel").css("text-decoration", "line-through");
 
-	$("#qr_code_overlay_icon").show()
-	$("#qrcode_placeholder > img:nth-child(1)").addClass("img-blur")
-	$("#qrcode_placeholder").show()
-
 	$("#qrcode").hide()
-
+	$("#qrcode_reload").show()
 }
 
 function refreshPage(){

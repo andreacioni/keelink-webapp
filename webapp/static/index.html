@@ -78,15 +78,19 @@
 				</div>
 				
 				<div class="row"><div class="twelve columns">&nbsp;</div></div>
+
+				<div class="row"><div class="twelve columns" align="center">
+					<div id="qrcode_loading" hidden>
+						<img src="images/qr_code_loading.gif" height="220px" >
+					</div>
+					<div id="qrcode_reload" hidden>
+						<a href="#" onclick="refreshPage()"><img src="images/qr_code_reload.png" height="220px" /></a>
+					</div>
+				</div></div>
 				
 				<div class="row">
 					<div class="twelve columns" align="center">
-						<div id="qrcode_placeholder" hidden>
-							<img src="images/qr_code_loading.gif" height="250px">
-							<div id="qr_code_overlay_icon" class="img-overlay-icon" hidden><a href="#"><i class="fas fa-sync-alt fa-5x"></i></a></div>
-						</div>
-						<div id="qrcode" hidden>
-						</div>
+						<div id="qrcode" hidden></div>
 					</div>
 				</div>
 				
