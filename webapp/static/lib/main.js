@@ -1,4 +1,4 @@
-const DEBUG = false;
+const DEBUG = true;
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -42,7 +42,7 @@ function init() {
 	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
 		$("#qrplaceholder").hide();
 	} else {
-		$("#qrcode_placeholder").show()
+		$("#qrcode_loading").show()
 
 		if(!hasSavedKeyPair()) {
 			log('no previous saved keypair available in web storage')
@@ -237,7 +237,7 @@ function copiedError(btn, isClear) {
 }
 
 function initQrCode() {
-	$("#qrcode_placeholder").hide()
+	$("#qrcode_loading").hide()
 	$("#qrcode").show()
 
 	var qrcode = new QRCode(document.getElementById("qrcode"), {

@@ -1,14 +1,15 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/kpango/glg"
-	"net/http"
 )
 
 func deleteEntry(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c)
+	entry, found := getEntryFromSessionID(c, true)
 
 	if !found {
 		return

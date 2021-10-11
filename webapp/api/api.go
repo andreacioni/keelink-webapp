@@ -24,20 +24,23 @@ type MethodHandler struct {
 var handlersMap = map[string]MethodHandler{
 	"init.php":          {method: http.MethodPost, f: postInit},
 	"getpublickey.php":  {method: http.MethodGet, f: getPublicKey},
-	"getcredforsid.php": {method: http.MethodGet, f: getCredForSid},
+	"getcredforsid.php": {method: http.MethodGet, f: getCredForSessionID},
 	"updatepsw.php":     {method: http.MethodPost, f: postPassword},
 	"updatecred.php":    {method: http.MethodPost, f: postUsernameAndPassword},
 	"removeentry.php":   {method: http.MethodPost, f: deleteEntry},
 }
 
 func Init(group *gin.RouterGroup) {
-
 	for path, handler := range handlersMap {
 		group.Handle(handler.method, path, append(handler.m, handler.f)...)
 	}
 }
 
-func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) {
+func enforceRequestOrigin(c *gin.Context, entry cache.CacheEntry) bool {
+	return entry.IP == c.Request.RemoteAddr
+}
+
+func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, found bool) {
 	c.Request.Method = "POST" //TODO - workaround: PostForm doesn'T parse a request if the method is not "POST"
 
 	sid := c.PostForm("sid")
@@ -56,6 +59,15 @@ func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) 
 		glg.Errorf("entry not found for session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 		return
+	}
+
+	if enforceSameOriginRequest {
+		if !enforceRequestOrigin(c, entry) {
+			glg.Errorf("enforcing same IP constraint on request for SID: %s (%s != %s)", sid, c.Request.RemoteAddr, entry.IP)
+			c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
+			found = false
+			entry = cache.CacheEntry{}
+		}
 	}
 
 	return
