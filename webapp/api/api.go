@@ -38,7 +38,7 @@ func Init(group *gin.RouterGroup) {
 }
 
 func enforceRequestOrigin(c *gin.Context, entry cache.CacheEntry) bool {
-	return strings.Split(entry.IP, ":")[0] == strings.Split(c.Request.RemoteAddr, ":")[0]
+	return entry.IP == strings.Split(c.Request.RemoteAddr, ":")[0]
 }
 
 func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
@@ -67,13 +67,13 @@ func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry
 	}
 
 	if enforceSameOriginRequest {
-		if !enforceRequestOrigin(c, entry) {
+		/* 		if !enforceRequestOrigin(c, entry) {
 			glg.Errorf("failed enforcing same IP constraint on request for SID: %s (%s != %s)", sid, c.Request.RemoteAddr, entry.IP)
 			c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 			found = false
 			entry = cache.CacheEntry{}
 			return
-		}
+		} */
 
 		if !enforceToken(c, entry) {
 			glg.Errorf("failed enforcing token constraint on request for SID: %s (%s != %s)", sid, c.Query("token"), entry.Token)

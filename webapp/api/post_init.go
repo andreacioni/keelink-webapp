@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ func postInit(c *gin.Context) {
 		token = uuidV4.String()
 	}
 
-	cache.Insert(cache.CacheEntry{IP: c.Request.RemoteAddr, SessionID: sid, PublicKey: publicKey, Token: token})
+	cache.Insert(cache.CacheEntry{IP: strings.Split(c.Request.RemoteAddr, ":")[0], SessionID: sid, PublicKey: publicKey, Token: token})
 
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": sid + "###" + token})
 }
