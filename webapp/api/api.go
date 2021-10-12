@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/google/uuid"
@@ -37,7 +38,7 @@ func Init(group *gin.RouterGroup) {
 }
 
 func enforceRequestOrigin(c *gin.Context, entry cache.CacheEntry) bool {
-	return entry.IP == c.Request.RemoteAddr
+	return strings.Split(entry.IP, ":")[0] == strings.Split(c.Request.RemoteAddr, ":")[0]
 }
 
 func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
