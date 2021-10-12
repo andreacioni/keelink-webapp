@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -12,6 +12,7 @@ const LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
 var DEFAULT_KEY_SIZE = 2048;
 
 var _sid;
+var _token;
 var _crypt;
 var invalidateSid = false;
 var requestFinished = true;
@@ -71,7 +72,8 @@ function requestInit() {
 	$.post("init.php",{PUBLIC_KEY : toSafeBase64(PEMtoBase64(_crypt.getPublicKey()))},"json")
 	.done(function(data) {
 		if(data.status === true) {
-			_sid = data['message'];
+			_sid = data['message'].split("###")[0];
+			_token = data['message'].split("###")[1];
 			
 			if(!checkBrowserSupport()) {
 				alertError("Your browser is up to date, please use newer browser");
@@ -168,7 +170,7 @@ function passwordLooker() {
 	if(!invalidateSid) {
 		if(requestFinished) {
 			requestFinished = false;
-			$.get("getcredforsid.php",{'sid':_sid},onSuccess,"json").always(function() {requestFinished = true;});
+			$.get("getcredforsid.php",{'sid':_sid, 'token': _token},onSuccess,"json").always(function() {requestFinished = true;});
 		}
 	} else {
 		invalidateSession(); 
@@ -366,6 +368,7 @@ function invalidateSession() {
 	clearInterval(pollingInterval);
 	$.post("removeentry.php",{'sid':_sid},function(){},"json");
 	_sid = null;
+	_token = null;
 	$("#sidLabel").css("text-decoration", "line-through");
 
 	$("#qrcode").hide()

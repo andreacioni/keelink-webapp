@@ -40,6 +40,10 @@ func enforceRequestOrigin(c *gin.Context, entry cache.CacheEntry) bool {
 	return entry.IP == c.Request.RemoteAddr
 }
 
+func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
+	return c.Query("token") == entry.Token
+}
+
 func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, found bool) {
 	c.Request.Method = "POST" //TODO - workaround: PostForm doesn'T parse a request if the method is not "POST"
 
@@ -63,10 +67,19 @@ func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry
 
 	if enforceSameOriginRequest {
 		if !enforceRequestOrigin(c, entry) {
-			glg.Errorf("enforcing same IP constraint on request for SID: %s (%s != %s)", sid, c.Request.RemoteAddr, entry.IP)
+			glg.Errorf("failed enforcing same IP constraint on request for SID: %s (%s != %s)", sid, c.Request.RemoteAddr, entry.IP)
 			c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 			found = false
 			entry = cache.CacheEntry{}
+			return
+		}
+
+		if !enforceToken(c, entry) {
+			glg.Errorf("failed enforcing token constraint on request for SID: %s (%s != %s)", sid, c.Query("token"), entry.Token)
+			c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
+			found = false
+			entry = cache.CacheEntry{}
+			return
 		}
 	}
 
