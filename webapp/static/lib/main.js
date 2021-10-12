@@ -1,4 +1,4 @@
-const DEBUG = false;
+const DEBUG = true;
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
