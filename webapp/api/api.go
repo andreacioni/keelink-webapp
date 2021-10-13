@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/google/uuid"
@@ -24,20 +25,27 @@ type MethodHandler struct {
 var handlersMap = map[string]MethodHandler{
 	"init.php":          {method: http.MethodPost, f: postInit},
 	"getpublickey.php":  {method: http.MethodGet, f: getPublicKey},
-	"getcredforsid.php": {method: http.MethodGet, f: getCredForSid},
+	"getcredforsid.php": {method: http.MethodGet, f: getCredForSessionID},
 	"updatepsw.php":     {method: http.MethodPost, f: postPassword},
 	"updatecred.php":    {method: http.MethodPost, f: postUsernameAndPassword},
 	"removeentry.php":   {method: http.MethodPost, f: deleteEntry},
 }
 
 func Init(group *gin.RouterGroup) {
-
 	for path, handler := range handlersMap {
 		group.Handle(handler.method, path, append(handler.m, handler.f)...)
 	}
 }
 
-func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) {
+func enforceRequestOrigin(c *gin.Context, entry cache.CacheEntry) bool {
+	return entry.IP == strings.Split(c.Request.RemoteAddr, ":")[0]
+}
+
+func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
+	return c.Query("token") == entry.Token
+}
+
+func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, found bool) {
 	c.Request.Method = "POST" //TODO - workaround: PostForm doesn'T parse a request if the method is not "POST"
 
 	sid := c.PostForm("sid")
@@ -56,6 +64,28 @@ func getEntryFromSessionID(c *gin.Context) (entry cache.CacheEntry, found bool) 
 		glg.Errorf("entry not found for session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 		return
+	}
+
+	if enforceSameOriginRequest {
+		/*
+			This method doesn't work behind Heroku
+
+			if !enforceRequestOrigin(c, entry) {
+				glg.Errorf("failed enforcing same IP constraint on request for SID: %s (%s != %s)", sid, c.Request.RemoteAddr, entry.IP)
+				c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
+				found = false
+				entry = cache.CacheEntry{}
+				return
+			}
+		*/
+
+		if !enforceToken(c, entry) {
+			glg.Errorf("failed enforcing token constraint on request for SID: %s (%s != %s)", sid, c.Query("token"), entry.Token)
+			c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
+			found = false
+			entry = cache.CacheEntry{}
+			return
+		}
 	}
 
 	return

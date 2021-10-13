@@ -7,7 +7,11 @@
   <title>KeeLink</title>
   <meta name="title" content="KeeLink">
   <meta name="author" content="Andrea Cioni">
-    
+  
+  <!-- SEO
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="description" content="KeeLink is a Keepass2Android plug-in that allows everyone to safely share credentials between the smartphone and every other device." />
+
   <!-- Mobile Specific Metas
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -22,13 +26,14 @@
   <link rel="stylesheet" href="css/skeleton.css">
   <link rel="stylesheet" href="css/custom.css">
   <link rel="stylesheet" href="css/pace.css">
-  <link rel="stylesheet" href="css/font-awesome.min.css">
 
   <!-- Favicon
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link rel="icon" type="image/ico" href="images/favicon.ico">
   
   <!-- JS LIBARY -->
+  <script src="https://kit.fontawesome.com/992540661e.js" crossorigin="anonymous"></script>
+  
   <script type="text/javascript" src="lib/pace/pace.js" data-pace-options='{ "ajax": false }'></script>
   <script type="text/javascript" src="lib/jsencrypt/jsencrypt.min.js"></script>
   <script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
@@ -37,11 +42,9 @@
   <script type="text/javascript" src="lib/clipboard/clipboard.min.js"></script>
   <script type="text/javascript" src='https://www.google.com/recaptcha/api.js'></script>
 
-
-  <script type="text/javascript" src="lib/main.js"></script>
-  
+  <script type="text/javascript" src="lib/main.js" async></script>
  </head>
- <body>
+ <body onload="init()">
  	<div class="container">
 		 
 		 <!-- Navigationbar -->
@@ -75,8 +78,21 @@
 				</div>
 				
 				<div class="row"><div class="twelve columns">&nbsp;</div></div>
+
+				<div class="row"><div class="twelve columns" align="center">
+					<div id="qrcode_loading" hidden>
+						<img src="images/qr_code_loading.gif" height="220px" >
+					</div>
+					<div id="qrcode_reload" hidden>
+						<a href="#" onclick="refreshPage()"><img src="images/qr_code_reload.png" height="220px" /></a>
+					</div>
+				</div></div>
 				
-				<div class="row"><div class="twelve columns" align="center"><div id="qrcode"></div></div></div>
+				<div class="row">
+					<div class="twelve columns" align="center">
+						<div id="qrcode" hidden></div>
+					</div>
+				</div>
 				
 				<div class="row"><div class="twelve columns">&nbsp;</div></div>
 				
@@ -141,7 +157,7 @@
 							KeeLink Android application acts as a bridge from Keepass2Android to this web page. Every credentials is retrieved
 							from the Keepass Database (KDBX). Once the credentials are received, the application waits for the user to scan QR code 
 							with its device camera. QR Code contains a simple URL as <i>ksid://yourpersonalanduniquesessionid</i>, so when the QR code 
-							is correctly parsed, the credentials are, firstly, encrypted with an <b>RSA 1024 bit</b> public key and then sent to a database and associated with <i>'yourpersonalanduniquesessionid'</i>. <b>No other information are sent 
+							is correctly parsed, the credentials are, firstly, encrypted with an <b>RSA 2048 bit</b> public key and then sent to a database and associated with <i>'yourpersonalanduniquesessionid'</i>. <b>No other information are sent 
 							over network</b>, <b>that is important for you</b> because it is essential for me to maintain your credentials as safe as possible. 
 							More security for your credentials was added by the <b>HTTPS/SSL</b> protocol that is used for real transmission from your Android device to this site.
 						</li>

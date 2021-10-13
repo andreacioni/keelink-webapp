@@ -9,7 +9,7 @@ import (
 )
 
 func postUsernameAndPassword(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c)
+	entry, found := getEntryFromSessionID(c, false)
 
 	if !found {
 		return
@@ -43,7 +43,7 @@ func postUsernameAndPassword(c *gin.Context) {
 }
 
 func postPassword(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c)
+	entry, found := getEntryFromSessionID(c, false)
 
 	if !found {
 		return

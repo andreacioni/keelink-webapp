@@ -1,34 +1,28 @@
-$(init);
+const DEBUG = true;
 
-var DEBUG = false;
+const INVALIDATE_TIMEOUT_SEC = 50;
+const REQUEST_INTERVAL = 2000;
 
-var INVALIDATE_TIMEOUT_SEC = 50;
-var REQUEST_INTERVAL = 2000;
+const REMINDER_DELETE_CLIPBOARD = 10000;
+const REMINDER_TITLE = "Don't forget!";
+const REMINDER_BODY = "Remember to clear your clipboard, your credentials are still there!";
 
-var REMINDER_DELETE_CLIPBOARD = 10000;
-var REMINDER_TITLE = "Don't forget!";
-var REMINDER_BODY = "Remember to clear your clipboard, your credentials are still there!";
-
-var DEFAULT_KEY_SIZE = 1024; //TODO test 2048 and persist on browser cache
+const LOCAL_STORAGE_PRIVATE_NAME = 'private_key';
+const LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
+var DEFAULT_KEY_SIZE = 2048;
 
 var _sid;
+var _token;
 var _crypt;
 var invalidateSid = false;
 var requestFinished = true;
 var pollingInterval;
-var _query_string = parseWindowURL();
+var _query_string = parseWindowURL();  
 
 function init() {
 	//Hide hosting if SelfHosted
 	if(!window.location.hostname.toLowerCase().endsWith("keelink.cloud")) {
 		$("#hostedby").hide();
-	}
-	
-	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
-		$("#qrplaceholder").hide();
-	} else {
-		generateKeyPair();
-		requestInit();
 	}
 
 	//Enable scrolling effect on anchor clicking
@@ -45,40 +39,100 @@ function init() {
 		$('a.navbar-link[href$="' + _query_string.show + '"').trigger('click');
 		//window.location.hash = "#" + _query_string.show;
 	}
+	
+	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
+		$("#qrplaceholder").hide();
+	} else {
+		$("#qrcode_loading").show()
+
+		if(!hasSavedKeyPair()) {
+			log('no previous saved keypair available in web storage')
+			//setting an interval avoid UI freeze
+			var interval = setInterval(() => $("#sidLabel").text("Generating your key pair..."), 100)
+			//generate key pair
+			generateKeyPair().then(() => {
+				clearInterval(interval)
+				requestInit()
+			})
+		} else {
+			log('previous keypair found, using it')
+			//load key from local storage
+			loadKeyPair()
+			requestInit()
+		}
+	}
 }
 
 function requestInit() {
 	$("#sidLabel").text("Receiving...");
+	
 	log(PEMtoBase64(_crypt.getPublicKey()));
 	log(toSafeBase64(PEMtoBase64(_crypt.getPublicKey())))
-	$.post("init.php",{PUBLIC_KEY : toSafeBase64(PEMtoBase64(_crypt.getPublicKey()))},"json").done(
-		function(data) {
-			if(data.status === true) {
-				_sid = data['message'];
-				
-				if(!checkBrowserSupport()) {
-					alertError("Your browser is up to date, please use newer browser");
-				} else {
-					$("#sidLabel").text(_sid);
-					initQrCode();
-					initAsyncAjaxRequest();
-				}
+	
+	$.post("init.php",{PUBLIC_KEY : toSafeBase64(PEMtoBase64(_crypt.getPublicKey()))},"json")
+	.done(function(data) {
+		if(data.status === true) {
+			_sid = data['message'].split("###")[0];
+			_token = data['message'].split("###")[1];
+			
+			if(!checkBrowserSupport()) {
+				alertError("Your browser is up to date, please use newer browser");
 			} else {
-				alertError("Cannot initialize KeeLink",data.message);
+				$("#sidLabel").text(_sid);
+				initQrCode();
+				initAsyncAjaxRequest();
 			}
+		} else {
+			alertError("Cannot initialize KeeLink",data.message);
 		}
-	).fail(
-		function() {
-			alertError("Error","Cannot initilize this service");
-		}
-	);
+	})
+	.fail(function() {
+		alertError("Error","Cannot initilize this service");
+	});
 }
 
 function generateKeyPair() {
-	$("#sidLabel").text("Generating key pair...");
-	_crypt = new JSEncrypt({default_key_size: DEFAULT_KEY_SIZE});
-	_crypt.getKey();
-	log(_crypt.getPublicKey());
+	return new Promise((resolve) => {
+		_crypt = new JSEncrypt({default_key_size: DEFAULT_KEY_SIZE});
+		_crypt.getKey(() => {
+			//save generated key pair on the browser internal storage
+			if (supportLocalStorage()) {
+				log('web storage available, save generated key')
+
+				localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, _crypt.getPublicKey())
+				localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, _crypt.getPrivateKey())
+			} else {
+				warn('web storage NOT available')
+			}
+
+			log(_crypt.getPublicKey());
+			resolve()
+		});
+		
+		
+	});
+}
+
+function supportLocalStorage() {
+	return typeof(Storage) !== "undefined";
+} 
+
+function hasSavedKeyPair() {
+	if(supportLocalStorage()) {
+		var privateKey = localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)
+		var publicKey = localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)
+		if(privateKey !== undefined && privateKey !== null && publicKey !== undefined && publicKey !== null) {
+			return true
+		}
+	}
+
+	return false
+}
+
+function loadKeyPair() {
+	_crypt = new JSEncrypt()
+	_crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME))
+	_crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME))
 }
 
 function parseWindowURL() {
@@ -116,7 +170,7 @@ function passwordLooker() {
 	if(!invalidateSid) {
 		if(requestFinished) {
 			requestFinished = false;
-			$.get("getcredforsid.php",{'sid':_sid},onSuccess,"json").always(function() {requestFinished = true;});
+			$.get("getcredforsid.php",{'sid':_sid, 'token': _token},onSuccess,"json").always(function() {requestFinished = true;});
 		}
 	} else {
 		invalidateSession(); 
@@ -185,6 +239,9 @@ function copiedError(btn, isClear) {
 }
 
 function initQrCode() {
+	$("#qrcode_loading").hide()
+	$("#qrcode").show()
+
 	var qrcode = new QRCode(document.getElementById("qrcode"), {
 		text: "ksid://" + _sid,
 		width: 200,
@@ -292,7 +349,6 @@ function onSuccess(data,textStatus,jqXhr) {
 				button: "Copy",
 			}).then((value)=>{
 				initClipboardButtons(decryptedUsername, decryptedPsw, value);
-				$.post("removeentry.php",{'sid':_sid},function(){},"json");
 				invalidateSession();
 			});
 		} else {
@@ -310,10 +366,13 @@ function onFail(data,textStatus,jqXhr) {
 function invalidateSession() {
 	invalidateSid = true;
 	clearInterval(pollingInterval);
+	$.post("removeentry.php",{'sid':_sid},function(){},"json");
 	_sid = null;
+	_token = null;
 	$("#sidLabel").css("text-decoration", "line-through");
-	$("#qrcode").css("filter", "blur(2px)");
-	$("#qrcode").css("-webkit-filter", "blur(2px)");
+
+	$("#qrcode").hide()
+	$("#qrcode_reload").show()
 }
 
 function refreshPage(){
@@ -333,6 +392,11 @@ function fromSafeBase64(safe) {
 }
 
 function log(str) {
+	if(DEBUG)
+		console.log(str);
+}
+
+function warn(str) {
 	if(DEBUG)
 		console.log(str);
 }

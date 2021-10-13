@@ -7,8 +7,8 @@ import (
 	"github.com/kpango/glg"
 )
 
-func getCredForSid(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c)
+func getCredForSessionID(c *gin.Context) {
+	entry, found := getEntryFromSessionID(c, true)
 
 	if !found {
 		return
@@ -21,4 +21,15 @@ func getCredForSid(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": true, "username": entry.Username, "password": entry.EncryptedPassword})
+}
+
+func getPasswordForSessionID(c *gin.Context) {
+	entry, found := getEntryFromSessionID(c, true)
+
+	if !found {
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": entry.EncryptedPassword})
+
 }
