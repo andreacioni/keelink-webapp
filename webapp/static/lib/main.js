@@ -131,8 +131,8 @@ function hasSavedKeyPair() {
 
 function loadKeyPair() {
 	_crypt = new JSEncrypt()
-	_crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME))
 	_crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME))
+	_crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME))
 }
 
 function parseWindowURL() {
