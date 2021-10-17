@@ -33,7 +33,7 @@ func postUsernameAndPassword(c *gin.Context) {
 	entry.EncryptedPassword = &psw
 	entry.Username = &username
 
-	if err := cache.Update(entry); err != nil {
+	if err := cache.Provider().Update(entry); err != nil {
 		glg.Errorf("Cannot update: %v", err)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Cannot update"})
 		return
@@ -65,7 +65,7 @@ func postPassword(c *gin.Context) {
 
 	entry.EncryptedPassword = &psw
 
-	if err := cache.Update(entry); err != nil {
+	if err := cache.Provider().Update(entry); err != nil {
 		glg.Errorf("Cannot update: %v", err)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Cannot update"})
 		return

@@ -1,5 +1,6 @@
 host: "0.0.0.0"
 port: 6261
 cache:
+  provider: memory
   expiresInSec: 120
   purgesEverySec: 240

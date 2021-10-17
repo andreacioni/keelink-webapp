@@ -20,6 +20,7 @@ type Configuration struct {
 }
 
 type Cache struct {
+	Provider       string        `yaml:"provider"`
 	ExpiresInSec   time.Duration `yaml:"expiresInSec"`
 	PurgesEverySec time.Duration `yaml:"purgesEverySec"`
 }
@@ -53,6 +54,7 @@ func LoadEnv() error {
 		Host: os.Getenv("HOST"),
 		Port: parseInt(os.Getenv("PORT")),
 		Cache: Cache{
+			Provider:       os.Getenv("CACHE_PROVIDER"),
 			ExpiresInSec:   parseDuration(os.Getenv("EXPIRES_IN_SEC")),
 			PurgesEverySec: parseDuration(os.Getenv("PURGES_EVERY_SEC")),
 		},

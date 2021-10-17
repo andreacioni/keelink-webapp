@@ -15,7 +15,7 @@ func deleteEntry(c *gin.Context) {
 		return
 	}
 
-	if err := cache.Remove(entry); err != nil {
+	if err := cache.Provider().Remove(entry); err != nil {
 		glg.Errorf("Cannot remove entry for: %s", entry.SessionID)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Entry not found"})
 		return

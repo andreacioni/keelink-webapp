@@ -30,7 +30,7 @@ func postInit(c *gin.Context) {
 		token = uuidV4.String()
 	}
 
-	cache.Insert(cache.CacheEntry{IP: strings.Split(c.Request.RemoteAddr, ":")[0], SessionID: sid, PublicKey: publicKey, Token: token})
+	cache.Provider().Insert(cache.CacheEntry{IP: strings.Split(c.Request.RemoteAddr, ":")[0], SessionID: sid, PublicKey: publicKey, Token: token})
 
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": sid + "###" + token})
 }

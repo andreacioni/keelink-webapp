@@ -60,7 +60,7 @@ func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry
 		return
 	}
 
-	if entry, found = cache.Get(sid); !found {
+	if entry, found, _ = cache.Provider().Get(sid); !found {
 		glg.Errorf("entry not found for session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 		return
