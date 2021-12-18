@@ -9,7 +9,7 @@ const REMINDER_BODY = "Remember to clear your clipboard, your credentials are st
 
 const LOCAL_STORAGE_PRIVATE_NAME = 'private_key';
 const LOCAL_STORAGE_PUBLIC_NAME = 'public_key';
-var DEFAULT_KEY_SIZE = 2048;
+const DEFAULT_KEY_SIZE = 4096;
 
 var _sid;
 var _token;
@@ -18,8 +18,19 @@ var invalidateSid = false;
 var requestFinished = true;
 var pollingInterval;
 var _query_string = parseWindowURL();  
+var _keySize = DEFAULT_KEY_SIZE
+
+const _setQrLoadingTip = (wait_time) => {
+	//wait 10s 
+	if(wait_time < 1000 * 10) {
+		$("#sidLabel").html("<span>Generating your key pair...<span><br/><span>This process may take a while</span>")
+	} else {
+		$("#sidLabel").html("<span>Generating your key pair...<span><br/><span>Tired of waiting? <a href=\"?key_size=1024\">Switch</a> to less secure (1024 bit) key pair</span>")
+	}
+}
 
 function init() {
+
 	//Hide hosting if SelfHosted
 	if(!window.location.hostname.toLowerCase().endsWith("keelink.cloud")) {
 		$("#hostedby").hide();
@@ -39,16 +50,30 @@ function init() {
 		$('a.navbar-link[href$="' + _query_string.show + '"').trigger('click');
 		//window.location.hash = "#" + _query_string.show;
 	}
+
+	if (_query_string && _query_string.key_size) {
+		try {
+			_keySize = parseInt(_query_string.key_size)
+		} catch(e) {
+			console.warn("failed to parse key size:", _query_string.key_size, "error:", e)
+		}
+	}
 	
 	if(_query_string && (_query_string.onlyinfo === true || _query_string.onlyinfo === 'true')) {
 		$("#qrplaceholder").hide();
-	} else {
+	}
+	else {
 		$("#qrcode_loading").show()
 
 		if(!hasSavedKeyPair()) {
 			log('no previous saved keypair available in web storage')
 			//setting an interval avoid UI freeze
-			var interval = setInterval(() => $("#sidLabel").text("Generating your key pair..."), 100)
+			const intervalRate = 100
+			var waitTime = 0
+			var interval = setInterval(() => {
+				waitTime += intervalRate
+				_setQrLoadingTip(waitTime)
+			}, intervalRate)
 			//generate key pair
 			generateKeyPair().then(() => {
 				clearInterval(interval)
@@ -93,7 +118,7 @@ function requestInit() {
 
 function generateKeyPair() {
 	return new Promise((resolve) => {
-		_crypt = new JSEncrypt({default_key_size: DEFAULT_KEY_SIZE});
+		_crypt = new JSEncrypt({default_key_size: _keySize});
 		_crypt.getKey(() => {
 			//save generated key pair on the browser internal storage
 			if (supportLocalStorage()) {
