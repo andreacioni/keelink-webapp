@@ -19,10 +19,16 @@ type Configuration struct {
 	Cache Cache `yaml:"cache"`
 }
 
+type Redis struct {
+	Url string `yaml:"url"`
+}
+
 type Cache struct {
 	Provider       string        `yaml:"provider"`
 	ExpiresInSec   time.Duration `yaml:"expiresInSec"`
 	PurgesEverySec time.Duration `yaml:"purgesEverySec"`
+
+	Redis Redis `yaml:"redis"`
 }
 
 var (
@@ -57,6 +63,8 @@ func LoadEnv() error {
 			Provider:       os.Getenv("CACHE_PROVIDER"),
 			ExpiresInSec:   parseDuration(os.Getenv("EXPIRES_IN_SEC")),
 			PurgesEverySec: parseDuration(os.Getenv("PURGES_EVERY_SEC")),
+
+			Redis: Redis{Url: os.Getenv("REDIS_URL")},
 		},
 	}
 

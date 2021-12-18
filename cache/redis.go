@@ -16,7 +16,7 @@ type RedisCacheProvider struct {
 
 func (rcp *RedisCacheProvider) Init() error {
 	rcp.client = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     config.GetConfig().Cache.Redis.Url,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
