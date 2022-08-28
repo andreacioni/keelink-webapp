@@ -1,1 +1,1 @@
-web: /layers/paketo-buildpacks_go-build/targets/bin/keelink-service -c /workspace/config.yml
+web: /layers/paketo-buildpacks_go-build/targets/bin/keelink-service -c /workspace/config.yaml
