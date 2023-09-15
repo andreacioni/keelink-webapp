@@ -3,6 +3,7 @@ package api
 import (
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,10 +15,37 @@ type sseCredForSessionIDResponse struct {
 	Message           string
 	Username          string
 	EncryptedPassword string
+
+	TimeoutReached bool
 }
 
 func getCredForSessionID(c *gin.Context) {
 
+	if shouldHandleWithSSE(c.Request.Header) {
+		handleWithSSE(c)
+	} else {
+		handleLegacy(c)
+	}
+
+}
+
+func handleLegacy(c *gin.Context) {
+	entry, sid, found := getEntryFromSessionID(c, true)
+
+	if !found {
+		return
+	}
+
+	if entry.EncryptedPassword == nil && entry.Username == nil {
+		glg.Errorf("Credentials not yet received for session ID: %s", sid)
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Credentials not yet received"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "username": entry.Username, "password": entry.EncryptedPassword})
+}
+
+func handleWithSSE(c *gin.Context) {
 	clientChan := make(chan sseCredForSessionIDResponse)
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
@@ -29,50 +57,72 @@ func getCredForSessionID(c *gin.Context) {
 		timeout := time.Now().Add(time.Minute)
 
 		for {
-			entry, found := getEntryFromSessionID(c, true)
+			entry, sid, found := getEntryFromSessionID(c, true)
 
 			if time.Now().Compare(timeout) > 0 {
-				glg.Errorf("Timeout waiting for SID: %s", entry.SessionID)
-				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Timeout reached"}
+				glg.Warnf("Timeout waiting for SID: %s", sid)
+				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Timeout reached", TimeoutReached: true}
 				return
 			}
 
 			if !found {
 				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Credentials not yet received"}
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * 2)
 				continue
 			}
 
 			if entry.EncryptedPassword == nil && entry.Username == nil {
-				glg.Errorf("Credentials not yet received for session ID: %s", entry.SessionID)
+				glg.Debugf("Credentials not yet received for session ID: %s", sid)
 
 				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Credentials not yet received, empty"}
-				//c.JSON(http.StatusOK, gin.H{"status": false, "message": "Credentials not yet received"})
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * 2)
 				continue
 			}
 
 			clientChan <- sseCredForSessionIDResponse{Status: true, Username: *entry.Username, EncryptedPassword: *entry.EncryptedPassword}
-			//c.JSON(http.StatusOK, gin.H{"status": true, "username": entry.Username, "password": entry.EncryptedPassword})
 
 		}
 
 	}()
 
-	c.Stream(func(w io.Writer) bool {
+	clientDisconnected := c.Stream(func(w io.Writer) bool {
 		// Stream message to client from message channel
 		if response, ok := <-clientChan; ok {
-			c.SSEvent("message", gin.H{"status": response.Status, "username": response.Username, "password": response.EncryptedPassword, "message": response.Message})
-			close(clientChan)
+			if response.Status {
+				c.SSEvent("message", gin.H{"status": response.Status, "username": response.Username, "password": response.EncryptedPassword})
+			} else {
+				c.SSEvent("message", gin.H{"status": response.Status, "message": response.Message})
+			}
+
+			if response.TimeoutReached {
+				close(clientChan)
+			}
+
 			return true
 		}
 		return false
 	})
 
+	glg.Debugf("client disconnect: %t", clientDisconnected)
+}
+
+func shouldHandleWithSSE(headers map[string][]string) bool {
+	acceptHeaders := headers["Accept"]
+
+	if len(acceptHeaders) > 0 {
+		for _, h := range acceptHeaders {
+			headerValue := strings.ToLower(h)
+			if strings.Contains(headerValue, "text/event-stream") {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func getPasswordForSessionID(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c, true)
+	entry, _, found := getEntryFromSessionID(c, true)
 
 	if !found {
 		return

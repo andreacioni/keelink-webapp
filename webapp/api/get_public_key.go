@@ -7,7 +7,7 @@ import (
 )
 
 func getPublicKey(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c, false)
+	entry, _, found := getEntryFromSessionID(c, false)
 
 	if !found {
 		return

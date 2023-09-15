@@ -2,7 +2,6 @@ package webapp
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kpango/glg"
 
-	"github.com/andreacioni/keelink-service/config"
 	"github.com/andreacioni/keelink-service/webapp/api"
 )
 
@@ -20,14 +18,16 @@ func Serve(shutdownHook func()) error {
 
 	router := gin.Default()
 	group := router.Group("/")
-	config := config.GetConfig()
+	//config := config.GetConfig()
 
 	staticHandlers(group)
 	apiHandlers(group)
 
-	if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%d", config.Host, config.Port)); err != nil {
+	router.Run("0.0.0.0:8080")
+
+	/*if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%d", config.Host, config.Port)); err != nil {
 		return fmt.Errorf("unable to listen & serve: %w", err)
-	}
+	}*/
 
 	return nil
 }
@@ -45,7 +45,7 @@ func staticHandlers(group *gin.RouterGroup) {
 	group.StaticFile("/privacy-policy.html", "./webapp/static/privacy-policy.html")
 }
 
-//From: https://github.com/gin-gonic/gin#graceful-restart-or-stop
+// From: https://github.com/gin-gonic/gin#graceful-restart-or-stop
 func listenAndServe(router *gin.Engine, shutdownHook func(), addressPort string) error {
 	server := &http.Server{
 		Addr:    addressPort,
