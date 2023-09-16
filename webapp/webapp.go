@@ -1,35 +1,39 @@
 package webapp
 
 import (
-	"context"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
+	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kpango/glg"
 
+	"github.com/andreacioni/keelink-service/config"
 	"github.com/andreacioni/keelink-service/webapp/api"
 )
 
-func Serve(shutdownHook func()) error {
+func Serve() (err error) {
 	glg.Info("initializing web server")
 
 	router := gin.Default()
 	group := router.Group("/")
-	//config := config.GetConfig()
+	config := config.GetConfig()
 
 	staticHandlers(group)
 	apiHandlers(group)
 
-	router.Run("0.0.0.0:8080")
+	if strings.TrimSpace(config.SSLCert) != "" && strings.TrimSpace(config.SSLKey) == "" {
+		glg.Debugf("tls encryption enabled, using '%s' cert and '%s'", config.SSLCert, config.SSLKey)
+		err = router.RunTLS(fmt.Sprintf("%s:%d", config.Host, config.Port), config.SSLCert, config.SSLKey)
+	} else {
+		glg.Debug("plain http connection server")
+		err = router.Run(fmt.Sprintf("%s:%d", config.Host, config.Port))
+	}
 
 	/*if err := listenAndServe(router, shutdownHook, fmt.Sprintf("%s:%d", config.Host, config.Port)); err != nil {
 		return fmt.Errorf("unable to listen & serve: %w", err)
 	}*/
 
-	return nil
+	return err
 }
 
 func apiHandlers(group *gin.RouterGroup) {
@@ -43,36 +47,4 @@ func staticHandlers(group *gin.RouterGroup) {
 	group.Static("/lib", "./webapp/static/lib")
 	group.StaticFile("/", "./webapp/static/index.html")
 	group.StaticFile("/privacy-policy.html", "./webapp/static/privacy-policy.html")
-}
-
-// From: https://github.com/gin-gonic/gin#graceful-restart-or-stop
-func listenAndServe(router *gin.Engine, shutdownHook func(), addressPort string) error {
-	server := &http.Server{
-		Addr:    addressPort,
-		Handler: router,
-	}
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			glg.Error(err)
-		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server with
-	// a timeout of 5 seconds.
-	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	glg.Debug("shutdown server ...")
-
-	shutdownHook()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		glg.Fatal("server shutdown:", err)
-	}
-	glg.Info("server exiting")
-
-	return nil
 }
