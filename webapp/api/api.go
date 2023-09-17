@@ -46,6 +46,8 @@ func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
 }
 
 func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, sid string, found bool) {
+	sid = c.PostForm("sid")
+
 	if sid == "" {
 		sid = c.Query("sid")
 	}

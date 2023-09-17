@@ -13,8 +13,8 @@ import (
 type sseCredForSessionIDResponse struct {
 	Status            bool
 	Message           string
-	Username          string
-	EncryptedPassword string
+	Username          *string
+	EncryptedPassword *string
 
 	TimeoutReached bool
 }
@@ -79,8 +79,8 @@ func handleWithSSE(c *gin.Context) {
 				continue
 			}
 
-			clientChan <- sseCredForSessionIDResponse{Status: true, Username: *entry.Username, EncryptedPassword: *entry.EncryptedPassword}
-
+			clientChan <- sseCredForSessionIDResponse{Status: true, Username: entry.Username, EncryptedPassword: entry.EncryptedPassword}
+			return
 		}
 
 	}()
