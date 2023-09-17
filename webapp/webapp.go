@@ -21,7 +21,7 @@ func Serve() (err error) {
 	staticHandlers(group)
 	apiHandlers(group)
 
-	if strings.TrimSpace(config.SSLCert) != "" && strings.TrimSpace(config.SSLKey) == "" {
+	if strings.TrimSpace(config.SSLCert) != "" && strings.TrimSpace(config.SSLKey) != "" {
 		glg.Debugf("tls encryption enabled, using '%s' cert and '%s'", config.SSLCert, config.SSLKey)
 		err = router.RunTLS(fmt.Sprintf("%s:%d", config.Host, config.Port), config.SSLCert, config.SSLKey)
 	} else {

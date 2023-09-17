@@ -14,8 +14,8 @@ type Configuration struct {
 	//Network
 	Host    string
 	Port    int
-	SSLCert string
-	SSLKey  string
+	SSLCert string  `yaml:"sslCert"`
+	SSLKey  string  `yaml:"sslKey"`
 
 	//Cache
 	Cache Cache `yaml:"cache"`

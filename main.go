@@ -8,8 +8,6 @@ import (
 	"github.com/andreacioni/keelink-service/config"
 	"github.com/andreacioni/keelink-service/webapp"
 	"github.com/kpango/glg"
-
-	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 var (
