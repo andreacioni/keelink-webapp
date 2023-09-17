@@ -12,8 +12,10 @@ import (
 
 type Configuration struct {
 	//Network
-	Host string
-	Port int
+	Host    string
+	Port    int
+	SSLCert string  `yaml:"sslCert"`
+	SSLKey  string  `yaml:"sslKey"`
 
 	//Cache
 	Cache Cache `yaml:"cache"`

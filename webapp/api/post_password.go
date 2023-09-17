@@ -9,7 +9,7 @@ import (
 )
 
 func postUsernameAndPassword(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c, false)
+	entry, sid, found := getEntryFromSessionID(c, false)
 
 	if !found {
 		return
@@ -19,13 +19,13 @@ func postUsernameAndPassword(c *gin.Context) {
 	username := c.PostForm("username")
 
 	if psw == "" {
-		glg.Errorf("Invalid password supplied: %s", entry.SessionID)
+		glg.Errorf("Invalid password supplied: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Invalid password supplied"})
 		return
 	}
 
 	if entry.EncryptedPassword != nil {
-		glg.Errorf("There is already a password set for current session ID: %s", entry.SessionID)
+		glg.Errorf("There is already a password set for current session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Password already set"})
 		return
 	}
@@ -43,7 +43,7 @@ func postUsernameAndPassword(c *gin.Context) {
 }
 
 func postPassword(c *gin.Context) {
-	entry, found := getEntryFromSessionID(c, false)
+	entry, sid, found := getEntryFromSessionID(c, false)
 
 	if !found {
 		return
@@ -52,13 +52,13 @@ func postPassword(c *gin.Context) {
 	psw := c.PostForm("key")
 
 	if psw == "" {
-		glg.Errorf("Invalid password supplied: %s", entry.SessionID)
+		glg.Errorf("Invalid password supplied: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Invalid password supplied"})
 		return
 	}
 
 	if entry.EncryptedPassword != nil {
-		glg.Errorf("There is already a password set for current session ID: %s", entry.SessionID)
+		glg.Errorf("There is already a password set for current session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "Password already set"})
 		return
 	}

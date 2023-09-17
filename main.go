@@ -8,8 +8,6 @@ import (
 	"github.com/andreacioni/keelink-service/config"
 	"github.com/andreacioni/keelink-service/webapp"
 	"github.com/kpango/glg"
-
-	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 var (
@@ -27,7 +25,7 @@ func main() {
 
 	cacheInit()
 
-	if err := webapp.Serve(shutdown); err != nil {
+	if err := webapp.Serve(); err != nil {
 		glg.Errorf("Cannot startup API: %v", err)
 		os.Exit(3)
 	}
@@ -61,8 +59,4 @@ func parseArgs() {
 	flag.StringVar(&logLevel, "l", "WARN", "set log level")
 
 	flag.Parse()
-}
-
-func shutdown() {
-
 }

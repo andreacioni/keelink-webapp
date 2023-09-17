@@ -45,23 +45,21 @@ func enforceToken(c *gin.Context, entry cache.CacheEntry) bool {
 	return c.Query("token") == entry.Token
 }
 
-func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, found bool) {
-	c.Request.Method = "POST" //TODO - workaround: PostForm doesn'T parse a request if the method is not "POST"
-
-	sid := c.PostForm("sid")
+func getEntryFromSessionID(c *gin.Context, enforceSameOriginRequest bool) (entry cache.CacheEntry, sid string, found bool) {
+	sid = c.PostForm("sid")
 
 	if sid == "" {
 		sid = c.Query("sid")
 	}
 
 	if err := validateMD5(sid); err != nil {
-		glg.Errorf("invalid MD5 string: %s", sid)
+		glg.Warnf("invalid MD5 string: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "invalid MD5 string"})
 		return
 	}
 
 	if entry, found = cache.Get(sid); !found {
-		glg.Errorf("entry not found for session ID: %s", sid)
+		glg.Debugf("entry not found for session ID: %s", sid)
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "entry not found"})
 		return
 	}
