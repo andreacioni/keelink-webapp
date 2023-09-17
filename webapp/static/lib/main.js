@@ -215,6 +215,8 @@ function initAsyncAjaxRequestSSE() {
     console.error("error receiving sse message:", err);
     console.warn("failing back to polling");
     initAsyncAjaxRequest();
+    credentialsEventSource.close();
+    credentialsEventSource = null;
   };
   credentialsEventSource.onmessage = (event) => {
     console.log(`message received: ${event.data}`);
@@ -473,7 +475,10 @@ function onFail(data, textStatus, jqXhr) {
 }
 
 function invalidateSession() {
-  credentialsEventSource.close();
+  if (credentialsEventSource) {
+    credentialsEventSource.close();
+    credentialsEventSource = null;
+  }
 
   // pollingInternal is set only if the credentialsEventSource failed to start
   if (pollingInterval) {
