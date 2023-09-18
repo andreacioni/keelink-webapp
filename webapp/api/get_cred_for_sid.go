@@ -47,6 +47,10 @@ func handleLegacy(c *gin.Context) {
 
 func handleWithSSE(c *gin.Context) {
 	clientChan := make(chan sseCredForSessionIDResponse)
+	defer func() {
+		close(clientChan)
+	}()
+
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
@@ -87,18 +91,15 @@ func handleWithSSE(c *gin.Context) {
 
 	clientDisconnected := c.Stream(func(w io.Writer) bool {
 		// Stream message to client from message channel
+
 		if response, ok := <-clientChan; ok {
 			if response.Status {
 				c.SSEvent("message", gin.H{"status": response.Status, "username": response.Username, "password": response.EncryptedPassword})
+				return false
 			} else {
 				c.SSEvent("message", gin.H{"status": response.Status, "message": response.Message})
+				return true
 			}
-
-			if response.TimeoutReached {
-				close(clientChan)
-			}
-
-			return true
 		}
 		return false
 	})
