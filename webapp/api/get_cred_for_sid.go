@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,7 +48,11 @@ func handleLegacy(c *gin.Context) {
 
 func handleWithSSE(c *gin.Context) {
 	clientChan := make(chan sseCredForSessionIDResponse)
+	wg := sync.WaitGroup{}
+	var clientDisconnected bool
+
 	defer func() {
+		glg.Debugf("closing channel")
 		close(clientChan)
 	}()
 
@@ -57,10 +62,19 @@ func handleWithSSE(c *gin.Context) {
 	c.Writer.Header().Set("Transfer-Encoding", "chunked")
 	c.Writer.Flush()
 
+	wg.Add(1)
 	go func() {
+		defer func() {
+			wg.Done()
+		}()
 		timeout := time.Now().Add(time.Minute)
 
 		for {
+
+			if clientDisconnected {
+				return
+			}
+
 			entry, sid, found := getEntryFromSessionID(c, true)
 
 			if time.Now().Compare(timeout) > 0 {
@@ -72,26 +86,23 @@ func handleWithSSE(c *gin.Context) {
 			if !found {
 				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Credentials not yet received"}
 				time.Sleep(time.Second * 2)
-				continue
-			}
 
-			if entry.EncryptedPassword == nil && entry.Username == nil {
+			} else if entry.EncryptedPassword == nil && entry.Username == nil {
 				glg.Debugf("Credentials not yet received for session ID: %s", sid)
 
 				clientChan <- sseCredForSessionIDResponse{Status: false, Message: "Credentials not yet received, empty"}
 				time.Sleep(time.Second * 2)
 				continue
+			} else {
+				clientChan <- sseCredForSessionIDResponse{Status: true, Username: entry.Username, EncryptedPassword: entry.EncryptedPassword}
+				return
 			}
-
-			clientChan <- sseCredForSessionIDResponse{Status: true, Username: entry.Username, EncryptedPassword: entry.EncryptedPassword}
-			return
 		}
 
 	}()
 
-	clientDisconnected := c.Stream(func(w io.Writer) bool {
+	clientDisconnected = c.Stream(func(w io.Writer) bool {
 		// Stream message to client from message channel
-
 		if response, ok := <-clientChan; ok {
 			if response.Status {
 				c.SSEvent("message", gin.H{"status": response.Status, "username": response.Username, "password": response.EncryptedPassword})
@@ -103,6 +114,9 @@ func handleWithSSE(c *gin.Context) {
 		}
 		return false
 	})
+
+	// Wait for goroutine to finish before closing the channel
+	wg.Wait()
 
 	glg.Debugf("client disconnect: %t", clientDisconnected)
 }
