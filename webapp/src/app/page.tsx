@@ -44,7 +44,7 @@ export default function Home() {
             </ul>
           </div>
         </nav>
-        {/* Center*/}
+        {/* Center */}
         <div id="content">
           <div className="row">
             <center className="twelve columns" id="logo-container">
@@ -149,7 +149,7 @@ export default function Home() {
               <b>4 simple steps</b>:
             </p>
             <ol>
-              # First step
+              {/* First step */}
               <li>
                 <b>Download and install</b> needed app on your phone/tablet
                 <ul>
