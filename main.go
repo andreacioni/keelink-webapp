@@ -6,7 +6,7 @@ import (
 
 	"github.com/andreacioni/keelink-service/cache"
 	"github.com/andreacioni/keelink-service/config"
-	"github.com/andreacioni/keelink-service/webapp"
+	"github.com/andreacioni/keelink-service/server"
 	"github.com/kpango/glg"
 )
 
@@ -25,7 +25,7 @@ func main() {
 
 	cacheInit()
 
-	if err := webapp.Serve(); err != nil {
+	if err := server.Serve(); err != nil {
 		glg.Errorf("Cannot startup API: %v", err)
 		os.Exit(3)
 	}

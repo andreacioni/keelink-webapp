@@ -1,4 +1,4 @@
-package webapp
+package server
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/kpango/glg"
 
 	"github.com/andreacioni/keelink-service/config"
-	"github.com/andreacioni/keelink-service/webapp/api"
+	"github.com/andreacioni/keelink-service/server/api"
 )
 
 func Serve() (err error) {
