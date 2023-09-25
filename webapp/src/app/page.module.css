@@ -1,10 +1,11 @@
-#logo-container img {
+.logo-container {
   height: 80px;
+  width: 80px;
   margin-bottom: 10px;
   margin-top: 10px;
 }
 
-#qrcode {
+.qrcode {
   transition-property: opacity;
   transition-duration: 1.15s;
   transition-timing-function: ease;
@@ -19,13 +20,13 @@
   width: 220px;
 }
 
-#qrcode img {
+.qrcode img {
   border-style: solid;
   border-color: white;
   border-width: 8px;
 }
 
-#content{
+.content{
   margin-top:  10px;
   z-index: 0;
 }
@@ -33,6 +34,11 @@
 .content-font {
   color:  #363533;
   font-size: 30px;
+}
+
+.content-font-small {
+  color:  #363533;
+  font-size: small;
 }
 
 .swal-text{
@@ -45,7 +51,7 @@
 
 /*From Skelethon site*/
 
-.container {
+.page-content {
   max-width: 800px; }
 .header {
   margin-top: 6rem;

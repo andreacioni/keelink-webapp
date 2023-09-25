@@ -1,60 +1,92 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+
+import styles from "./page.module.css";
 
 import flyIoLogo from "./images/flyio_logo.png";
 import githubLogo from "./images/github_logo.png";
 import keelinkLogo from "./images/logo.png";
 import qrLoading from "./images/qr_code_loading.gif";
 import qrReload from "./images/qr_code_reload.png";
+import Link from "next/link";
+
+const DEFAULT_KEY_SIZE = 2048;
 
 export default function Home() {
+  const searchParams = useSearchParams();
+
+  let keySize = DEFAULT_KEY_SIZE;
+  let onlyInfo = false;
+
+  // Change default key size
+  if (searchParams && searchParams.get("key_size")) {
+    const ks = parseInt(searchParams.get("key_size")!);
+    if (ks && !isNaN(ks)) {
+      keySize = ks;
+    }
+  }
+
+  if (searchParams && searchParams.get("onlyinfo")) {
+    // Do not initialize a session, just display information
+    onlyInfo = true;
+  } else {
+    // Initialize a new session
+  }
+
   return (
-    <main>
-      <div className="container">
+    <main className="container">
+      <div className={styles["page-content"]}>
         {/* Navigation Bar */}
-        <nav className="navbar">
-          <div className="container">
-            <ul className="navbar-list">
-              <li className="navbar-item">
-                <a className="navbar-link" href="#">
+        <nav className={styles.navbar}>
+          <div className={styles.container}>
+            <ul className={styles["navbar-list"]}>
+              <li className={styles["navbar-item"]}>
+                <Link className={styles["navbar-link"]} href="#">
                   <u>KeeLink</u>
-                </a>
+                </Link>
               </li>
-              <li className="navbar-item">
-                <a className="navbar-link" href="#howto">
+              <li className={styles["navbar-item"]}>
+                <a className={styles["navbar-link"]} href="#howto">
                   {" "}
                   How To
                 </a>
               </li>
-              <li className="navbar-item">
-                <a className="navbar-link" href="#howworks">
+              <li className={styles["navbar-item"]}>
+                <Link className={styles["navbar-link"]} href="#howworks">
                   {" "}
                   How it works{" "}
-                </a>
+                </Link>
               </li>
-              <li className="navbar-item">
-                <a className="navbar-link" href="#credits">
+              <li className={styles["navbar-item"]}>
+                <Link className={styles["navbar-link"]} href="#credits">
                   Credits
-                </a>
+                </Link>
               </li>
-              <li className="navbar-item">
-                <a className="navbar-link" href="#contribute">
+              <li className={styles["navbar-item"]}>
+                <Link className={styles["navbar-link"]} href="#contribute">
                   Contribute
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </nav>
         {/* Center */}
-        <div id="content">
+        <div className={styles.content}>
           <div className="row">
-            <center className="twelve columns" id="logo-container">
-              <Image alt="" src={keelinkLogo} width={100} height={100} />
+            <center className="twelve columns">
+              <Image
+                className={styles["logo-container"]}
+                alt="Keelink logo"
+                src={keelinkLogo}
+              />
             </center>
           </div>
-          <div id="qrplaceholder" className="container">
+          <div id="qrplaceholder" className={styles.container}>
             <div className="row">
               <div className="twelve columns">
-                <p className="content-font">
+                <p className={styles["content-font"]}>
                   <b>
                     Use this QR code to share a credential from Keepass to this
                     device
@@ -71,7 +103,7 @@ export default function Home() {
               <div className="twelve columns">
                 <div id="qrcode_loading" hidden>
                   <Image
-                    alt="Landing QR Code"
+                    alt="Loading QR Code"
                     src={qrLoading}
                     height={220}
                     width={30}
@@ -92,7 +124,7 @@ export default function Home() {
 
             <div className="row">
               <div className="twelve columns">
-                <div id="qrcode" hidden></div>
+                <div className={styles.qrcode} hidden></div>
               </div>
             </div>
 
@@ -102,7 +134,7 @@ export default function Home() {
 
             <div className="row">
               <div className="twelve columns">
-                <p className="content-font">
+                <center className={styles["content-font-small"]}>
                   <b>
                     Your Session ID: <br />{" "}
                     <span id="sidLabel">
@@ -110,8 +142,8 @@ export default function Home() {
                       it is disabled
                     </span>
                   </b>
-                </p>
-                <p className="content-font">
+                </center>
+                <p className={styles["content-font"]}>
                   <button
                     id="copyUserBtn"
                     data-clipboard-text="no username"
@@ -142,7 +174,7 @@ export default function Home() {
             </div>
           </div>
           {/* How To */}
-          <div id="howto" className="docs-section">
+          <div id="howto" className={styles["docs-section"]}>
             <h2>How To</h2>
             <p>
               In order to send credentials to this page you first need to follow{" "}
@@ -190,7 +222,7 @@ export default function Home() {
             </ol>
             <p>Interested on details? Just go ahead!</p>
           </div>
-          <div id="howworks" className="docs-section">
+          <div id="howworks" className={styles["docs-section"]}>
             <h2>How it works</h2>
             <p>
               <i>
@@ -248,7 +280,7 @@ export default function Home() {
               application.
             </p>
           </div>
-          <div id="credits" className="docs-section">
+          <div id="credits" className={styles["docs-section"]}>
             <h2>Credits</h2>
             <p>
               KeeLink is designed, developed and supported by{" "}
@@ -319,7 +351,7 @@ export default function Home() {
               </li>
             </ul>
           </div>
-          <div id="contribute" className="docs-section">
+          <div id="contribute" className={styles["docs-section"]}>
             <h2>Contribute</h2>
             <p>
               KeeLink is a <b>free and no-profit application</b>. If you like
@@ -355,8 +387,8 @@ export default function Home() {
               </form>
             </div>
           </div>
-          <div className="docs-section">
-            <div className="container">
+          <div className={styles["docs-section"]}>
+            <div className={styles.container}>
               <div className="row">
                 <div className="six columns">
                   <p>

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Raleway } from "next/font/google";
 
-const inter = Raleway({ subsets: ["latin"] });
+const raleway = Raleway({ subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
   title: "KeeLink",
@@ -33,10 +33,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
         {/* JS Library */}
-        <Script
-          src="https://kit.fontawesome.com/992540661e.js"
-          crossOrigin="anonymous"
-        />
+
         <Script
           type="text/javascript"
           src="libs/pace/pace.js"
@@ -50,7 +47,7 @@ export default function RootLayout({
         />
         <Script type="text/javascript" src="libs/clipboard/clipboard.min.js" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={raleway.className}>{children}</body>
     </html>
   );
 }
