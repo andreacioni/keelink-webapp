@@ -11,14 +11,35 @@ import keelinkLogo from "./images/logo.png";
 import qrLoading from "./images/qr_code_loading.gif";
 import qrReload from "./images/qr_code_reload.png";
 import Link from "next/link";
+import { JSEncrypt } from "jsencrypt";
+import { useEffect, useState } from "react";
+import SessionIdLabel, { LabelState } from "./components/session_id_label";
+import { PEMtoBase64, toSafeBase64 } from "./utils";
+import { alertError } from "./alerts";
 
-const DEFAULT_KEY_SIZE = 2048;
+const DEBUG = true;
+
+const INVALIDATE_TIMEOUT_SEC = 50;
+const REQUEST_INTERVAL = 2000;
+
+const REMINDER_DELETE_CLIPBOARD = 10000;
+const REMINDER_TITLE = "Don't forget!";
+const REMINDER_BODY =
+  "Remember to clear your clipboard, your credentials are still there!";
+
+const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
+const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
+const DEFAULT_KEY_SIZE = 4096;
 
 export default function Home() {
   const searchParams = useSearchParams();
 
   let keySize = DEFAULT_KEY_SIZE;
-  let onlyInfo = false;
+
+  const [isKeyPairLoading, setKeyPairLoading] = useState(true);
+  const [labelState, setLabelState] = useState<LabelState>("init");
+  const [sid, setSid] = useState<String | undefined>();
+  const [isDisplayOnlyInfo, setDisplayOnlyInfo] = useState(true);
 
   // Change default key size
   if (searchParams && searchParams.get("key_size")) {
@@ -28,12 +49,30 @@ export default function Home() {
     }
   }
 
-  if (searchParams && searchParams.get("onlyinfo")) {
-    // Do not initialize a session, just display information
-    onlyInfo = true;
-  } else {
-    // Initialize a new session
-  }
+  useEffect(() => {
+    if (searchParams && searchParams.get("onlyinfo")) {
+      // Do not initialize a session, just display information
+      return;
+    }
+    setDisplayOnlyInfo(false);
+    setLabelState("key_generation");
+    //Check for presence of an already defined keypair in local storage
+    if (!hasSavedKeyPair()) {
+      log("no previous saved keypair available in web storage");
+
+      //generate key pair
+      generateKeyPair(keySize).then((crypt) => {
+        setLabelState("waiting_sid");
+        requestInit(crypt);
+      });
+    } else {
+      log("previous keypair found, using it");
+      //load key from local storage
+      const crypt = loadKeyPair();
+      setLabelState("waiting_sid");
+      requestInit(crypt);
+    }
+  }, [keySize, searchParams]);
 
   return (
     <main className="container">
@@ -83,7 +122,12 @@ export default function Home() {
               />
             </center>
           </div>
-          <div id="qrplaceholder" className={styles.container}>
+
+          <div
+            id="qrplaceholder"
+            className={styles.container}
+            hidden={isDisplayOnlyInfo}
+          >
             <div className="row">
               <div className="twelve columns">
                 <p className={styles["content-font"]}>
@@ -101,12 +145,12 @@ export default function Home() {
 
             <div className="row">
               <div className="twelve columns">
-                <div id="qrcode_loading" hidden>
+                <div id="qrcode_loading">
                   <Image
                     alt="Loading QR Code"
                     src={qrLoading}
                     height={220}
-                    width={30}
+                    width={220}
                   />
                 </div>
                 <div id="qrcode_reload" hidden>
@@ -138,8 +182,7 @@ export default function Home() {
                   <b>
                     Your Session ID: <br />{" "}
                     <span id="sidLabel">
-                      Seems that your browser doesn&apos;t support JavaScript or
-                      it is disabled
+                      {<SessionIdLabel state={labelState} />}
                     </span>
                   </b>
                 </center>
@@ -429,4 +472,93 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+async function requestInit(
+  crypt: JSEncrypt
+): Promise<[String, String] | undefined> {
+  log(PEMtoBase64(crypt.getPublicKey()));
+  log(toSafeBase64(PEMtoBase64(crypt.getPublicKey())));
+
+  const body = { PUBLIC_KEY: toSafeBase64(PEMtoBase64(crypt.getPublicKey())) };
+
+  const res = await fetch("http://localhost:8080/init.php", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 200) {
+    const data = await res.json();
+
+    if (data.status === true) {
+      const sid = data["message"].split("###")[0];
+      const token = data["message"].split("###")[1];
+
+      return [sid, token];
+    } else {
+      alertError("Cannot initialize KeeLink", data.message);
+    }
+  } else {
+    alertError(
+      "Failed to initialize the service",
+      `Error code: ${res.status} (${res.statusText})`
+    );
+  }
+}
+
+function loadKeyPair() {
+  const crypt = new JSEncrypt();
+  crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)!);
+  crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)!);
+
+  return crypt;
+}
+
+function generateKeyPair(keySize: number): Promise<JSEncrypt> {
+  return new Promise<JSEncrypt>((resolve) => {
+    const crypt = new JSEncrypt({ default_key_size: keySize.toString() });
+    crypt.getKey(() => {
+      //save generated key pair on the browser internal storage
+      if (supportLocalStorage()) {
+        log("web storage available, save generated key");
+
+        localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, crypt.getPublicKey());
+        localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, crypt.getPrivateKey());
+      } else {
+        warn("web storage NOT available");
+      }
+
+      log(crypt.getPublicKey());
+      resolve(crypt);
+    });
+  });
+}
+
+function supportLocalStorage() {
+  return typeof Storage !== "undefined";
+}
+
+function hasSavedKeyPair() {
+  if (supportLocalStorage()) {
+    var privateKey = localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME);
+    var publicKey = localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME);
+    if (
+      privateKey !== undefined &&
+      privateKey !== null &&
+      publicKey !== undefined &&
+      publicKey !== null
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function log(str: String): void {
+  if (DEBUG) console.log(str);
+}
+
+function warn(str: String): void {
+  if (DEBUG) console.log(str);
 }

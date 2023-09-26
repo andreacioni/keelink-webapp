@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  //generate static pages and put them in out/ folder
+  //output: "export",
   images: {
     remotePatterns: [
       {

@@ -39,12 +39,7 @@ export default function RootLayout({
           src="libs/pace/pace.js"
           data-pace-options='{ "ajax": false }'
         />
-        <Script type="text/javascript" src="libs/jsencrypt/jsencrypt.min.js" />
         <Script type="text/javascript" src="libs/qrcode/qrcode.min.js" />
-        <Script
-          type="text/javascript"
-          src="libs/sweetalert/sweetalert.min.js"
-        />
         <Script type="text/javascript" src="libs/clipboard/clipboard.min.js" />
       </head>
       <body className={raleway.className}>{children}</body>
