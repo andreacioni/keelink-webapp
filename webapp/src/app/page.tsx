@@ -11,7 +11,7 @@ import keelinkLogo from "./images/logo.png";
 import qrLoading from "./images/qr_code_loading.gif";
 import qrReload from "./images/qr_code_reload.png";
 import Link from "next/link";
-import { JSEncrypt } from "jsencrypt";
+import JSEncrypt from "jsencrypt/lib/index.js";
 import { useEffect, useState } from "react";
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
 import { PEMtoBase64, toSafeBase64 } from "./utils";
@@ -31,30 +31,21 @@ const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 const DEFAULT_KEY_SIZE = 4096;
 
+let didInit = false;
+
 export default function Home() {
   const searchParams = useSearchParams();
+  const displayOnlyInfo = searchParams?.get("onlyinfo") === "true";
+  const keySizeStr = searchParams?.get("key_size");
 
-  let keySize = DEFAULT_KEY_SIZE;
+  const keySize = keySizeStr ? parseInt(keySizeStr) : DEFAULT_KEY_SIZE;
 
-  const [isKeyPairLoading, setKeyPairLoading] = useState(true);
   const [labelState, setLabelState] = useState<LabelState>("init");
-  const [sid, setSid] = useState<String | undefined>();
-  const [isDisplayOnlyInfo, setDisplayOnlyInfo] = useState(true);
-
-  // Change default key size
-  if (searchParams && searchParams.get("key_size")) {
-    const ks = parseInt(searchParams.get("key_size")!);
-    if (ks && !isNaN(ks)) {
-      keySize = ks;
-    }
-  }
+  const [sessionId, setSessionId] = useState<String | undefined>();
+  const [sessionToken, setSessionToken] = useState<String | undefined>();
 
   useEffect(() => {
-    if (searchParams && searchParams.get("onlyinfo")) {
-      // Do not initialize a session, just display information
-      return;
-    }
-    setDisplayOnlyInfo(false);
+    if (didInit) return;
     setLabelState("key_generation");
     //Check for presence of an already defined keypair in local storage
     if (!hasSavedKeyPair()) {
@@ -70,9 +61,20 @@ export default function Home() {
       //load key from local storage
       const crypt = loadKeyPair();
       setLabelState("waiting_sid");
-      requestInit(crypt);
+      requestInit(crypt).then((res) => {
+        if (res) {
+          const [sid, token] = res;
+          setSessionId(sid);
+          setSessionToken(token);
+          setLabelState("waiting_credentials");
+        } else {
+          log("session id and token not available");
+        }
+      });
     }
-  }, [keySize, searchParams]);
+
+    didInit = true;
+  }, [keySize]);
 
   return (
     <main className="container">
@@ -126,7 +128,7 @@ export default function Home() {
           <div
             id="qrplaceholder"
             className={styles.container}
-            hidden={isDisplayOnlyInfo}
+            hidden={displayOnlyInfo}
           >
             <div className="row">
               <div className="twelve columns">
@@ -182,7 +184,7 @@ export default function Home() {
                   <b>
                     Your Session ID: <br />{" "}
                     <span id="sidLabel">
-                      {<SessionIdLabel state={labelState} />}
+                      {<SessionIdLabel state={labelState} sid={sessionId} />}
                     </span>
                   </b>
                 </center>
