@@ -1,21 +1,25 @@
 "use client";
 
+import JSEncrypt from "jsencrypt/lib/index.js";
+
+import QRCode from "react-qr-code";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import styles from "./page.module.css";
 
 import flyIoLogo from "./images/flyio_logo.png";
 import githubLogo from "./images/github_logo.png";
 import keelinkLogo from "./images/logo.png";
-import qrLoading from "./images/qr_code_loading.gif";
-import qrReload from "./images/qr_code_reload.png";
-import Link from "next/link";
-import JSEncrypt from "jsencrypt/lib/index.js";
-import { useEffect, useState } from "react";
+
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
-import { PEMtoBase64, toSafeBase64 } from "./utils";
-import { alertError } from "./alerts";
+import { PEMtoBase64, fromSafeBase64, toSafeBase64 } from "./utils";
+import { alertError, alertWarn, swal } from "./alerts";
+import QrCodeImage, { QrCodeState } from "./components/qr_code";
+import ClipboardJS from "clipboard";
 
 const DEBUG = true;
 
@@ -31,6 +35,12 @@ const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 const DEFAULT_KEY_SIZE = 4096;
 
+interface CredentialsResponse {
+  status: boolean;
+  username: string | undefined | null;
+  password: string | undefined | null;
+}
+
 let didInit = false;
 
 export default function Home() {
@@ -41,10 +51,189 @@ export default function Home() {
   const keySize = keySizeStr ? parseInt(keySizeStr) : DEFAULT_KEY_SIZE;
 
   const [labelState, setLabelState] = useState<LabelState>("init");
-  const [sessionId, setSessionId] = useState<String | undefined>();
-  const [sessionToken, setSessionToken] = useState<String | undefined>();
+  const [sessionId, setSessionId] = useState<string | undefined>();
+  const [sessionToken, setSessionToken] = useState<string | undefined>();
+  const [username, setUsername] = useState<string | undefined>();
+  const [password, setPassword] = useState<string | undefined>();
+  const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
+
+  const credentialsEventSource = useMemo(() => {
+    if (sessionId && sessionToken) {
+      return new EventSource(
+        `http://localhost:8080/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
+      );
+    }
+  }, [sessionId, sessionToken]);
+
+  const jsEncrypt = useMemo(() => {
+    return new JSEncrypt({ default_key_size: keySize.toString() });
+  }, [keySize]);
 
   useEffect(() => {
+    console.log([credentialsEventSource, keySize, sessionId]);
+
+    function initClipboardButtons(
+      username: string,
+      password: string,
+      copyPassword: boolean
+    ) {
+      if (username !== undefined && username !== null) {
+        setUsername(username);
+
+        //Copy username to clipboard button
+        var clipCopyUser = new ClipboardJS(".copyUserBtn");
+        clipCopyUser.on("success", function () {
+          log("copy username to clipboard: done!");
+          //copiedSuccess("#copyUserBtn", false);
+          remindDelete();
+        });
+        clipCopyUser.on("error", function (e) {
+          console.error("failed to copy username", e);
+          //copiedError("#copyUserBtn", false);
+        });
+      }
+
+      setPassword(password);
+      //Copy password to clipboard button
+      var clipCopyPsw = new ClipboardJS(".copyPassBtn");
+      clipCopyPsw.on("success", function () {
+        log("copy password to clipboard: done!");
+        //copiedSuccess("#copyPassBtn", false);
+        remindDelete();
+      });
+      clipCopyPsw.on("error", function (e) {
+        console.error("failed to copy password", e);
+        //copiedError("#copyPassBtn", false);
+      });
+
+      //Copy password if needed
+      //if (copyPassword) {
+      //  $("#copyPassBtn").click();
+      //}
+
+      //Clear clipboard button
+      var clipClear = new ClipboardJS("#clearBtn");
+      clipClear.on("success", function () {
+        log("clipboard cleared");
+        //copiedSuccess("#clearBtn", true);
+      });
+      clipClear.on("error", function (e) {
+        console.error("failed clear clipboard", e);
+        //copiedError("#clearBtn", true);
+      });
+    }
+
+    async function invalidateSession() {
+      if (credentialsEventSource) {
+        credentialsEventSource.close();
+      }
+
+      // pollingInternal is set only if the credentialsEventSource failed to start
+      //if (pollingInterval) {
+      //  clearInterval(pollingInterval);
+      //}
+      if (sessionId) await removeEntry(sessionId);
+
+      setQrCodeState("reload");
+    }
+
+    function onCredentialsReceived(data: CredentialsResponse) {
+      if (data != undefined && data.status === true) {
+        let decryptedUsername: string, decryptedPsw: string;
+
+        if (data.username === undefined || data.username === null) {
+          log("Username was not received");
+        } else {
+          log("Encoded username: " + data.username);
+          data.username = fromSafeBase64(data.username);
+          log("Decoded username: " + data.username);
+          decryptedUsername = jsEncrypt.decrypt(data.username) || "";
+          log("Decrypted username: " + decryptedUsername);
+        }
+
+        if (data.password) {
+          log("Encoded password: " + data.password);
+          data.password = fromSafeBase64(data.password);
+          log("Decoded password: " + data.password);
+          decryptedPsw = jsEncrypt.decrypt(data.password) || "";
+          log("Decrypted password: " + decryptedPsw);
+
+          if (decryptedPsw) {
+            //Username is not required for next steps
+            swal
+              .fire({
+                title: "Credentials received!",
+                text: "Would you copy your password on clipboard? (Also remember to clear your clipboard after usage!)",
+                icon: "success",
+                confirmButtonText: "Copy",
+              })
+              .then((value) => {
+                initClipboardButtons(
+                  decryptedUsername,
+                  decryptedPsw,
+                  value.isConfirmed
+                );
+                invalidateSession();
+              });
+          } else {
+            alertError(
+              "Error",
+              "There was an error, can't decrypt your credentials. Try again..."
+            );
+            invalidateSession();
+          }
+        }
+      }
+    }
+
+    function initAsyncAjaxRequestSSE() {
+      if (credentialsEventSource) {
+        credentialsEventSource.onerror = (err) => {
+          console.error("error receiving sse message:", err);
+          console.warn("failing back to polling");
+          //initAsyncAjaxRequest();
+          credentialsEventSource.close();
+          setSessionId(undefined);
+        };
+        credentialsEventSource.onmessage = (event) => {
+          console.log(`message received: ${event.data}`);
+          let creds = JSON.parse(event.data);
+
+          if (creds.status) {
+            console.log("credentials received");
+            onCredentialsReceived(creds);
+          }
+        };
+        setTimeout(async function () {
+          //Channel is not closed (2) means we did not receive the credentials from the server
+          //This should never be true because we want the server to terminate the connection before
+          //timeout expires.
+          if (credentialsEventSource.readyState != 2) {
+            console.warn("credentials NOT received before timeout");
+            invalidateSession();
+            await alertWarn(
+              "No credentials received...",
+              "No credential was received in the last minute, reload page to start a new session"
+            );
+            refreshPage();
+          }
+        }, 1000 * INVALIDATE_TIMEOUT_SEC);
+      }
+    }
+
+    function onInitDone(res: [string, string] | undefined) {
+      if (res) {
+        const [sid, token] = res;
+        setSessionId(sid);
+        setSessionToken(token);
+        setLabelState("waiting_credentials");
+        setQrCodeState("valid_session_id");
+        initAsyncAjaxRequestSSE();
+      } else {
+        log("session id and token not available");
+      }
+    }
+
     if (didInit) return;
     setLabelState("key_generation");
     //Check for presence of an already defined keypair in local storage
@@ -52,29 +241,20 @@ export default function Home() {
       log("no previous saved keypair available in web storage");
 
       //generate key pair
-      generateKeyPair(keySize).then((crypt) => {
-        setLabelState("waiting_sid");
-        requestInit(crypt);
-      });
+      saveKeyPair(jsEncrypt);
+      setLabelState("waiting_sid");
+      requestInit(jsEncrypt).then(onInitDone);
     } else {
       log("previous keypair found, using it");
+
       //load key from local storage
       const crypt = loadKeyPair();
       setLabelState("waiting_sid");
-      requestInit(crypt).then((res) => {
-        if (res) {
-          const [sid, token] = res;
-          setSessionId(sid);
-          setSessionToken(token);
-          setLabelState("waiting_credentials");
-        } else {
-          log("session id and token not available");
-        }
-      });
+      requestInit(crypt).then(onInitDone);
     }
 
     didInit = true;
-  }, [keySize]);
+  }, [credentialsEventSource, jsEncrypt, keySize, sessionId]);
 
   return (
     <main className="container">
@@ -147,24 +327,7 @@ export default function Home() {
 
             <div className="row">
               <div className="twelve columns">
-                <div id="qrcode_loading">
-                  <Image
-                    alt="Loading QR Code"
-                    src={qrLoading}
-                    height={220}
-                    width={220}
-                  />
-                </div>
-                <div id="qrcode_reload" hidden>
-                  <a href="#">
-                    <Image
-                      alt="Reload QR Code"
-                      src={qrReload}
-                      height="220"
-                      width={30}
-                    />
-                  </a>
-                </div>
+                <QrCodeImage state={qrCodeState} sid={sessionId} />
               </div>
             </div>
 
@@ -476,9 +639,20 @@ export default function Home() {
   );
 }
 
+async function removeEntry(sid: string): Promise<void> {
+  const res = await fetch("removeentry.php", {
+    method: "DELETE",
+    body: JSON.stringify({ sid: sid }),
+  });
+
+  if (!res.ok) {
+    throw `failed to delete the entry for sid: ${sid} (status code: ${res.status})`;
+  }
+}
+
 async function requestInit(
   crypt: JSEncrypt
-): Promise<[String, String] | undefined> {
+): Promise<[string, string] | undefined> {
   log(PEMtoBase64(crypt.getPublicKey()));
   log(toSafeBase64(PEMtoBase64(crypt.getPublicKey())));
 
@@ -516,24 +690,16 @@ function loadKeyPair() {
   return crypt;
 }
 
-function generateKeyPair(keySize: number): Promise<JSEncrypt> {
-  return new Promise<JSEncrypt>((resolve) => {
-    const crypt = new JSEncrypt({ default_key_size: keySize.toString() });
-    crypt.getKey(() => {
-      //save generated key pair on the browser internal storage
-      if (supportLocalStorage()) {
-        log("web storage available, save generated key");
+function saveKeyPair(crypt: JSEncrypt) {
+  //save generated key pair on the browser internal storage
+  if (supportLocalStorage()) {
+    log("web storage available, save generated key");
 
-        localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, crypt.getPublicKey());
-        localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, crypt.getPrivateKey());
-      } else {
-        warn("web storage NOT available");
-      }
-
-      log(crypt.getPublicKey());
-      resolve(crypt);
-    });
-  });
+    localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, crypt.getPublicKey());
+    localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, crypt.getPrivateKey());
+  } else {
+    warn("web storage NOT available");
+  }
 }
 
 function supportLocalStorage() {
@@ -563,4 +729,26 @@ function log(str: String): void {
 
 function warn(str: String): void {
   if (DEBUG) console.log(str);
+}
+
+function refreshPage() {
+  window.location.reload();
+}
+
+function remindDelete() {
+  setTimeout(function () {
+    if (Notification.permission === "granted") {
+      var notification = new Notification(REMINDER_TITLE, {
+        body: REMINDER_BODY,
+      });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission(function (permission) {
+        if (permission === "granted") {
+          var notification = new Notification(REMINDER_TITLE, {
+            body: REMINDER_BODY,
+          });
+        }
+      });
+    }
+  }, REMINDER_DELETE_CLIPBOARD);
 }
