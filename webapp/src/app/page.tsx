@@ -57,21 +57,17 @@ export default function Home() {
   const [password, setPassword] = useState<string | undefined>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
 
-  const credentialsEventSource = useMemo(() => {
+  /*   const credentialsEventSource = useMemo(() => {
     if (sessionId && sessionToken) {
-      return new EventSource(
-        `getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
-      );
+      return 
     }
-  }, [sessionId, sessionToken]);
+  }, [sessionId, sessionToken]); */
 
   const jsEncrypt = useMemo(() => {
     return new JSEncrypt({ default_key_size: keySize.toString() });
   }, [keySize]);
 
   useEffect(() => {
-    console.log([credentialsEventSource, keySize, sessionId]);
-
     function initClipboardButtons(
       username: string,
       password: string,
@@ -124,9 +120,9 @@ export default function Home() {
     }
 
     async function invalidateSession() {
-      if (credentialsEventSource) {
-        credentialsEventSource.close();
-      }
+      // if (credentialsEventSource) {
+      //   credentialsEventSource.close();
+      // }
 
       // pollingInternal is set only if the credentialsEventSource failed to start
       //if (pollingInterval) {
@@ -135,6 +131,46 @@ export default function Home() {
       if (sessionId) await removeEntry(sessionId);
 
       setQrCodeState("reload");
+    }
+    function initAsyncAjaxRequestSSE() {
+      const credentialsEventSource = new EventSource(
+        `getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
+      );
+      if (credentialsEventSource) {
+        log("attaching listener to EventSource");
+        credentialsEventSource.onerror = (err) => {
+          console.error("error receiving sse message:", err);
+          warn("failing back to polling");
+          //initAsyncAjaxRequest();
+          credentialsEventSource.close();
+          setSessionId(undefined);
+        };
+        credentialsEventSource.onmessage = (event) => {
+          log(`message received: ${event.data}`);
+          let creds = JSON.parse(event.data);
+
+          if (creds.status) {
+            log("credentials received");
+            onCredentialsReceived(creds);
+          }
+        };
+        setTimeout(async function () {
+          //Channel is not closed (2) means we did not receive the credentials from the server
+          //This should never be true because we want the server to terminate the connection before
+          //timeout expires.
+          if (credentialsEventSource.readyState != 2) {
+            warn("credentials NOT received before timeout");
+            invalidateSession();
+            await alertWarn(
+              "No credentials received...",
+              "No credential was received in the last minute, reload page to start a new session"
+            );
+            refreshPage();
+          }
+        }, 1000 * INVALIDATE_TIMEOUT_SEC);
+      } else {
+        warn("unable to attach listeners to EventSource");
+      }
     }
 
     function onCredentialsReceived(data: CredentialsResponse) {
@@ -186,41 +222,12 @@ export default function Home() {
       }
     }
 
-    function initAsyncAjaxRequestSSE() {
-      if (credentialsEventSource) {
-        credentialsEventSource.onerror = (err) => {
-          console.error("error receiving sse message:", err);
-          console.warn("failing back to polling");
-          //initAsyncAjaxRequest();
-          credentialsEventSource.close();
-          setSessionId(undefined);
-        };
-        credentialsEventSource.onmessage = (event) => {
-          console.log(`message received: ${event.data}`);
-          let creds = JSON.parse(event.data);
-
-          if (creds.status) {
-            console.log("credentials received");
-            onCredentialsReceived(creds);
-          }
-        };
-        setTimeout(async function () {
-          //Channel is not closed (2) means we did not receive the credentials from the server
-          //This should never be true because we want the server to terminate the connection before
-          //timeout expires.
-          if (credentialsEventSource.readyState != 2) {
-            console.warn("credentials NOT received before timeout");
-            invalidateSession();
-            await alertWarn(
-              "No credentials received...",
-              "No credential was received in the last minute, reload page to start a new session"
-            );
-            refreshPage();
-          }
-        }, 1000 * INVALIDATE_TIMEOUT_SEC);
-      }
+    if (sessionId && sessionToken) {
+      initAsyncAjaxRequestSSE();
     }
+  });
 
+  useEffect(() => {
     function onInitDone(res: [string, string] | undefined) {
       if (res) {
         const [sid, token] = res;
@@ -228,7 +235,6 @@ export default function Home() {
         setSessionToken(token);
         setLabelState("waiting_credentials");
         setQrCodeState("valid_session_id");
-        initAsyncAjaxRequestSSE();
       } else {
         log("session id and token not available");
       }
@@ -254,7 +260,7 @@ export default function Home() {
     }
 
     didInit = true;
-  }, [credentialsEventSource, jsEncrypt, keySize, sessionId]);
+  }, [jsEncrypt, keySize, sessionId]);
 
   return (
     <main className="container">
@@ -658,7 +664,7 @@ async function requestInit(
 
   const body = { PUBLIC_KEY: toSafeBase64(PEMtoBase64(crypt.getPublicKey())) };
 
-  const res = await fetch("http://localhost:8080/init.php", {
+  const res = await fetch("init.php", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -723,12 +729,12 @@ function hasSavedKeyPair() {
   return false;
 }
 
-function log(str: String): void {
+function log(str: any): void {
   if (DEBUG) console.log(str);
 }
 
-function warn(str: String): void {
-  if (DEBUG) console.log(str);
+function warn(str: any): void {
+  if (DEBUG) console.warn(str);
 }
 
 function refreshPage() {
