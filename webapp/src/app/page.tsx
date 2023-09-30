@@ -60,7 +60,7 @@ export default function Home() {
   const credentialsEventSource = useMemo(() => {
     if (sessionId && sessionToken) {
       return new EventSource(
-        `http://localhost:8080/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
+        `getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
       );
     }
   }, [sessionId, sessionToken]);
