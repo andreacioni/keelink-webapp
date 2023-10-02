@@ -35,13 +35,16 @@ const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 const DEFAULT_KEY_SIZE = 4096;
 
+const BASE_HOST = "http://localhost:8080";
+
 interface CredentialsResponse {
   status: boolean;
   username: string | undefined | null;
   password: string | undefined | null;
 }
 
-let didInit = false;
+let didInitUseEffect1 = false;
+let didInitUseEffect2 = false;
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -120,9 +123,9 @@ export default function Home() {
     }
 
     async function invalidateSession() {
-      // if (credentialsEventSource) {
-      //   credentialsEventSource.close();
-      // }
+      //if (credentialsEventSource) {
+      //  credentialsEventSource.close();
+      //}
 
       // pollingInternal is set only if the credentialsEventSource failed to start
       //if (pollingInterval) {
@@ -134,7 +137,7 @@ export default function Home() {
     }
     function initAsyncAjaxRequestSSE() {
       const credentialsEventSource = new EventSource(
-        `getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
+        `${BASE_HOST}/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
       );
       if (credentialsEventSource) {
         log("attaching listener to EventSource");
@@ -165,7 +168,6 @@ export default function Home() {
               "No credentials received...",
               "No credential was received in the last minute, reload page to start a new session"
             );
-            refreshPage();
           }
         }, 1000 * INVALIDATE_TIMEOUT_SEC);
       } else {
@@ -222,8 +224,9 @@ export default function Home() {
       }
     }
 
-    if (sessionId && sessionToken) {
+    if (!didInitUseEffect2 && sessionId && sessionToken) {
       initAsyncAjaxRequestSSE();
+      didInitUseEffect2 = true;
     }
   });
 
@@ -240,7 +243,7 @@ export default function Home() {
       }
     }
 
-    if (didInit) return;
+    if (didInitUseEffect1) return;
     setLabelState("key_generation");
     //Check for presence of an already defined keypair in local storage
     if (!hasSavedKeyPair()) {
@@ -259,7 +262,7 @@ export default function Home() {
       requestInit(crypt).then(onInitDone);
     }
 
-    didInit = true;
+    didInitUseEffect1 = true;
   }, [jsEncrypt, keySize, sessionId]);
 
   return (
@@ -646,8 +649,8 @@ export default function Home() {
 }
 
 async function removeEntry(sid: string): Promise<void> {
-  const res = await fetch("removeentry.php", {
-    method: "DELETE",
+  const res = await fetch(`${BASE_HOST}/removeentry.php`, {
+    method: "POST",
     body: JSON.stringify({ sid: sid }),
   });
 
@@ -664,7 +667,7 @@ async function requestInit(
 
   const body = { PUBLIC_KEY: toSafeBase64(PEMtoBase64(crypt.getPublicKey())) };
 
-  const res = await fetch("init.php", {
+  const res = await fetch(`${BASE_HOST}/init.php`, {
     method: "POST",
     body: JSON.stringify(body),
   });

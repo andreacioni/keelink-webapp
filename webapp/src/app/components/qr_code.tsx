@@ -38,10 +38,6 @@ function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
   return <QRCode value={sidUrl} href={sidUrl}></QRCode>;
 }
 
-function WaitingSidLabel() {
-  return <span>Receiving...</span>;
-}
-
 function QrCodeGenerating() {
   return (
     <div id="qrcode_loading">
@@ -53,9 +49,7 @@ function QrCodeGenerating() {
 function QrCodeReload() {
   return (
     <div id="qrcode_reload" hidden>
-      <a href="#">
-        <Image alt="Reload QR Code" src={qrReload} height="220" width={30} />
-      </a>
+      <Image alt="Reload QR Code" src={qrReload} height={220} width={220} />
     </div>
   );
 }

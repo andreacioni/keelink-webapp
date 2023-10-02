@@ -107,10 +107,16 @@ func handleWithSSE(c *gin.Context) {
 			if response.Status {
 				c.SSEvent("message", gin.H{"status": response.Status, "username": response.Username, "password": response.EncryptedPassword})
 				return false
-			} else {
-				c.SSEvent("message", gin.H{"status": response.Status, "message": response.Message})
-				return true
 			}
+
+			if response.TimeoutReached {
+				c.SSEvent("message", gin.H{"status": response.Status, "message": "timeout reached"})
+				return false
+			}
+
+			c.SSEvent("message", gin.H{"status": response.Status, "message": response.Message})
+			return true
+
 		}
 		return false
 	})
