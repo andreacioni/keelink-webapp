@@ -1,9 +1,12 @@
+import styles from "./session_id_labels.module.css";
+
 export type LabelState =
   | "init"
   | "key_generation"
   | "slow_key_generation"
   | "waiting_sid"
-  | "waiting_credentials";
+  | "waiting_credentials"
+  | "invalidated";
 
 export const LABEL_STATES: LabelState[] = [
   "init",
@@ -11,6 +14,7 @@ export const LABEL_STATES: LabelState[] = [
   "slow_key_generation",
   "waiting_sid",
   "waiting_credentials",
+  "invalidated",
 ];
 
 interface SessionIdLabelProps {
@@ -19,6 +23,10 @@ interface SessionIdLabelProps {
 }
 
 interface WaitingCredentialsLabelProps {
+  sid: String;
+}
+
+interface InvalidatedCredentialsLabelProps {
   sid: String;
 }
 
@@ -32,8 +40,14 @@ export default function SessionIdLabel(props: SessionIdLabelProps) {
       return <WaitingSidLabel />;
     case "waiting_credentials":
       if (props.sid) return <WaitingCredentialsLabel sid={props.sid} />;
+    case "invalidated":
+      if (props.sid) return <InvalidatedCredentialsLabel sid={props.sid} />;
   }
   return <></>;
+}
+
+function InvalidatedCredentialsLabel(props: InvalidatedCredentialsLabelProps) {
+  return <span className={styles.invalidated_sid}>{props.sid}</span>;
 }
 
 function WaitingCredentialsLabel(props: WaitingCredentialsLabelProps) {

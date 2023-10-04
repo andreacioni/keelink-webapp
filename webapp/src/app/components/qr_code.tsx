@@ -35,7 +35,7 @@ export default function QrCodeImage(props: QrCodeProps) {
 
 function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
   const sidUrl = "ksin://" + props.sid!;
-  return <QRCode value={sidUrl} href={sidUrl}></QRCode>;
+  return <QRCode value={sidUrl} size={200} href={sidUrl}></QRCode>;
 }
 
 function QrCodeGenerating() {
@@ -48,8 +48,10 @@ function QrCodeGenerating() {
 
 function QrCodeReload() {
   return (
-    <div id="qrcode_reload" hidden>
-      <Image alt="Reload QR Code" src={qrReload} height={220} width={220} />
+    <div id="qrcode_reload">
+      <a href="#" onClick={() => location.reload()}>
+        <Image alt="Reload QR Code" src={qrReload} height={220} width={220} />
+      </a>
     </div>
   );
 }
