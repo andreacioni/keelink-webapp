@@ -21,6 +21,8 @@ func deleteEntry(c *gin.Context) {
 		return
 	}
 
+	glg.Debug("Removed session id:", sid)
+
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "OK"})
 
 }

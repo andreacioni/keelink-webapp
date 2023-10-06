@@ -1,6 +1,7 @@
 import "./css/normalize.css";
 import "./css/skeleton.css";
 import "./css/pace.css";
+import "./css/swal.css";
 
 import type { Metadata } from "next";
 import Script from "next/script";
@@ -39,7 +40,6 @@ export default function RootLayout({
           src="libs/pace/pace.js"
           data-pace-options='{ "ajax": false }'
         />
-        <Script type="text/javascript" src="libs/qrcode/qrcode.min.js" />
         <Script type="text/javascript" src="libs/clipboard/clipboard.min.js" />
       </head>
       <body className={raleway.className}>{children}</body>

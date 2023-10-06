@@ -2,8 +2,6 @@
 
 import JSEncrypt from "jsencrypt/lib/index.js";
 
-import QRCode from "react-qr-code";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,7 +24,7 @@ import ContributeSection from "./sections/contribute";
 
 const DEBUG = true;
 
-const INVALIDATE_TIMEOUT_SEC = 50;
+const INVALIDATE_TIMEOUT_SEC = 10;
 const REQUEST_INTERVAL = 2000;
 
 const REMINDER_DELETE_CLIPBOARD = 10000;
@@ -59,7 +57,6 @@ export default function Home() {
   const [username, setUsername] = useState<string | undefined>();
   const [password, setPassword] = useState<string | undefined>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
-  console.log(`qrCodeState: ${qrCodeState}`);
 
   /*   const credentialsEventSource = useMemo(() => {
     if (sessionId && sessionToken) {
@@ -75,6 +72,7 @@ export default function Home() {
     if (didInitUseEffect2) return;
 
     let credentialsEventSource: EventSource;
+    let pollingInterval: NodeJS.Timeout;
 
     function initClipboardButtons(
       username: string,
@@ -133,9 +131,9 @@ export default function Home() {
       }
 
       // pollingInternal is set only if the credentialsEventSource failed to start
-      //if (pollingInterval) {
-      //  clearInterval(pollingInterval);
-      //}
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
       if (sessionId && sessionToken) await removeEntry(sessionId, sessionToken);
 
       setQrCodeState("reload");
@@ -150,7 +148,7 @@ export default function Home() {
         credentialsEventSource.onerror = (err) => {
           console.error("error receiving sse message:", err);
           warn("failing back to polling");
-          //initAsyncAjaxRequest();
+          initAsyncAjaxRequest();
           credentialsEventSource.close();
           setSessionId(undefined);
         };
@@ -179,6 +177,40 @@ export default function Home() {
       } else {
         warn("unable to attach listeners to EventSource");
       }
+    }
+
+    function initAsyncAjaxRequest() {
+      console.log("starting legacy credentials retrieve method");
+
+      let invalidateSid = false;
+      let requestFinished = true;
+
+      function credentialPolling() {
+        if (!invalidateSid) {
+          if (requestFinished) {
+            requestFinished = false;
+            fetch(
+              `${BASE_HOST}/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
+            )
+              .then((res) => res.json())
+              .then((json) => onCredentialsReceived(json))
+              .finally(() => (requestFinished = true));
+          } else {
+            log("backoff!");
+          }
+        } else {
+          invalidateSession();
+          alertWarn(
+            "No credentials received...",
+            "No credential was received in the last minute, reload page to start a new session"
+          );
+        }
+      }
+
+      pollingInterval = setInterval(credentialPolling, REQUEST_INTERVAL);
+      setTimeout(function () {
+        invalidateSid = true;
+      }, 1000 * INVALIDATE_TIMEOUT_SEC);
     }
 
     function onCredentialsReceived(data: CredentialsResponse) {
