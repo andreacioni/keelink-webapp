@@ -24,7 +24,7 @@ import ContributeSection from "./sections/contribute";
 
 const DEBUG = true;
 
-const INVALIDATE_TIMEOUT_SEC = 10;
+const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
 
 const REMINDER_DELETE_CLIPBOARD = 10000;

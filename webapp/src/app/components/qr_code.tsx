@@ -1,6 +1,7 @@
 import Image from "next/image";
 import QRCode from "react-qr-code";
 
+import styles from "./qr_code.module.css";
 import qrLoading from "../images/qr_code_loading.gif";
 import qrReload from "../images/qr_code_reload.png";
 
@@ -35,7 +36,11 @@ export default function QrCodeImage(props: QrCodeProps) {
 
 function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
   const sidUrl = "ksin://" + props.sid!;
-  return <QRCode value={sidUrl} size={200} href={sidUrl}></QRCode>;
+  return (
+    <div className={styles.fadeIn}>
+      <QRCode value={sidUrl} size={170} href={sidUrl}></QRCode>
+    </div>
+  );
 }
 
 function QrCodeGenerating() {
