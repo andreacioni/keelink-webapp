@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   //generate static pages and put them in out/ folder
-  //output: "export",
+  output: "export",
   images: {
-    //unoptimized: true,
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
