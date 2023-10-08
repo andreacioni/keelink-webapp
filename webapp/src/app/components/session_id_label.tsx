@@ -32,6 +32,8 @@ interface InvalidatedCredentialsLabelProps {
 
 export default function SessionIdLabel(props: SessionIdLabelProps) {
   switch (props.state) {
+    case "init":
+      return <InitLabel />;
     case "key_generation":
       return <GenerateKeyPairLabel />;
     case "slow_key_generation":
@@ -44,6 +46,10 @@ export default function SessionIdLabel(props: SessionIdLabelProps) {
       if (props.sid) return <InvalidatedCredentialsLabel sid={props.sid} />;
   }
   return <></>;
+}
+
+function InitLabel() {
+  return <p>Initializing ...</p>;
 }
 
 function InvalidatedCredentialsLabel(props: InvalidatedCredentialsLabelProps) {
@@ -61,7 +67,7 @@ function WaitingSidLabel() {
 function GenerateKeyPairLabel() {
   return (
     <>
-      <span>Generating your key pair...</span>
+      <span>Generating your key pair ...</span>
       <br />
       <span>This process may take a while</span>
     </>

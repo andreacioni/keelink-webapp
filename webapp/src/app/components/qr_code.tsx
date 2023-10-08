@@ -35,7 +35,7 @@ export default function QrCodeImage(props: QrCodeProps) {
 }
 
 function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
-  const sidUrl = "ksin://" + props.sid!;
+  const sidUrl = "ksid://" + props.sid!;
   return (
     <div className={styles.fadeIn}>
       <QRCode value={sidUrl} size={170} href={sidUrl}></QRCode>

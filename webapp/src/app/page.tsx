@@ -2,10 +2,10 @@
 
 import JSEncrypt from "jsencrypt/lib/index.js";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import keelinkLogo from "./images/logo.png";
 
@@ -48,6 +48,9 @@ export default function Home() {
 
   const keySize = keySizeStr ? parseInt(keySizeStr) : DEFAULT_KEY_SIZE;
 
+  const jsEncryptRef = useRef<JSEncrypt>();
+  const workerRef = useRef<Worker>();
+
   const [labelState, setLabelState] = useState<LabelState>("init");
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [sessionToken, setSessionToken] = useState<string | undefined>();
@@ -61,9 +64,9 @@ export default function Home() {
     }
   }, [sessionId, sessionToken]); */
 
-  const jsEncrypt = useMemo(() => {
+  /*   const jsEncrypt = useMemo(() => {
     return new JSEncrypt({ default_key_size: keySize.toString() });
-  }, [keySize]);
+  }, [keySize]); */
 
   useEffect(() => {
     if (didInitUseEffect2) return;
@@ -155,7 +158,7 @@ export default function Home() {
 
           if (creds.status) {
             log("credentials received");
-            onCredentialsReceived(creds);
+            onCredentialsReceived(jsEncryptRef.current!, creds);
           }
         };
         setTimeout(async function () {
@@ -190,7 +193,9 @@ export default function Home() {
               `${BASE_HOST}/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
             )
               .then((res) => res.json())
-              .then((json) => onCredentialsReceived(json))
+              .then((json) =>
+                onCredentialsReceived(jsEncryptRef.current!, json)
+              )
               .finally(() => (requestFinished = true));
           } else {
             log("backoff!");
@@ -210,7 +215,10 @@ export default function Home() {
       }, 1000 * INVALIDATE_TIMEOUT_SEC);
     }
 
-    function onCredentialsReceived(data: CredentialsResponse) {
+    function onCredentialsReceived(
+      jsEncrypt: JSEncrypt,
+      data: CredentialsResponse
+    ) {
       if (data != undefined && data.status === true) {
         let decryptedUsername: string, decryptedPsw: string;
 
@@ -259,7 +267,7 @@ export default function Home() {
       }
     }
 
-    if (sessionId && sessionToken) {
+    if (sessionId && sessionToken && jsEncryptRef) {
       initAsyncAjaxRequestSSE();
       didInitUseEffect2 = true;
     }
@@ -278,27 +286,61 @@ export default function Home() {
       }
     }
 
-    if (didInitUseEffect1) return;
-    setLabelState("key_generation");
-    //Check for presence of an already defined keypair in local storage
-    if (!hasSavedKeyPair()) {
-      log("no previous saved keypair available in web storage");
-
-      //generate key pair
-      saveKeyPair(jsEncrypt);
-      setLabelState("waiting_sid");
-      requestInit(jsEncrypt).then(onInitDone);
-    } else {
-      log("previous keypair found, using it");
-
-      //load key from local storage
-      const crypt = loadKeyPair();
-      setLabelState("waiting_sid");
-      requestInit(crypt).then(onInitDone);
+    function generateKeyPair(): Promise<JSEncrypt> {
+      return new Promise<JSEncrypt>((resolve) => {
+        workerRef.current = new Worker(
+          new URL("./key_generator.worker.ts", import.meta.url)
+        );
+        workerRef.current.postMessage(keySize);
+        workerRef.current.onmessage = (event: MessageEvent<string[]>) => {
+          const [pub_key, prv_key] = event.data;
+          const jsEncrypt = new JSEncrypt({});
+          jsEncrypt.setPublicKey(pub_key);
+          jsEncrypt.setPrivateKey(prv_key);
+          resolve(jsEncrypt);
+        };
+        workerRef.current.onerror = (ev: ErrorEvent) => {
+          console.error("web worker error:", ev);
+        };
+        workerRef.current.onmessageerror = (ev: MessageEvent<any>) => {
+          console.error("web worker message error:", ev);
+        };
+      });
     }
 
+    if (didInitUseEffect1) return;
+
+    setLabelState("key_generation");
+    setQrCodeState("generating");
+
+    loadKeyPair()
+      .then(
+        (jsEncrypt) => {
+          log("previous keypair found, using it");
+          return jsEncrypt;
+        },
+        () => {
+          log("no previous saved key pair available in web storage");
+          return generateKeyPair().then((jsEncrypt) => {
+            saveKeyPair(jsEncrypt.getPublicKey(), jsEncrypt.getPrivateKey());
+            return jsEncrypt;
+          });
+        }
+      )
+      .then((jsEncrypt) => {
+        setLabelState("waiting_sid");
+        requestInit(jsEncrypt).then(onInitDone);
+        jsEncryptRef.current = jsEncrypt;
+      });
+
     didInitUseEffect1 = true;
-  }, [jsEncrypt, keySize, sessionId]);
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+
+    didInitUseEffect1 = true;
+  }, [keySize, sessionId]);
 
   return (
     <main className="container">
@@ -451,8 +493,8 @@ async function removeEntry(sid: string, token: string): Promise<void> {
 async function requestInit(
   crypt: JSEncrypt
 ): Promise<[string, string] | undefined> {
-  log(PEMtoBase64(crypt.getPublicKey()));
-  log(toSafeBase64(PEMtoBase64(crypt.getPublicKey())));
+  log("PEMtoBase64: " + PEMtoBase64(crypt.getPublicKey()));
+  log("toSafeBase64: " + toSafeBase64(PEMtoBase64(crypt.getPublicKey())));
 
   const body = { PUBLIC_KEY: toSafeBase64(PEMtoBase64(crypt.getPublicKey())) };
 
@@ -480,21 +522,32 @@ async function requestInit(
   }
 }
 
-function loadKeyPair() {
-  const crypt = new JSEncrypt();
-  crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)!);
-  crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)!);
+function loadKeyPair(): Promise<JSEncrypt> {
+  return new Promise<JSEncrypt>((resolve, reject) => {
+    //check for presence of an already defined key pair in local storage
 
-  return crypt;
+    if (hasSavedKeyPair()) {
+      //load key from local storage
+      const crypt = new JSEncrypt();
+      crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)!);
+      crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)!);
+
+      resolve(crypt);
+    } else {
+      reject();
+    }
+  });
 }
 
-function saveKeyPair(crypt: JSEncrypt) {
+function saveKeyPair(public_key: string, private_key: string) {
   //save generated key pair on the browser internal storage
   if (supportLocalStorage()) {
-    log("web storage available, save generated key");
+    log("web storage available, saving generated keys...");
 
-    localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, crypt.getPublicKey());
-    localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, crypt.getPrivateKey());
+    localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, public_key);
+    localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, private_key);
+
+    log("saved!");
   } else {
     warn("web storage NOT available");
   }
