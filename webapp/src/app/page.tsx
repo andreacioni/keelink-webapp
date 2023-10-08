@@ -7,10 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import styles from "./page.module.css";
-
-import flyIoLogo from "./images/flyio_logo.png";
-import githubLogo from "./images/github_logo.png";
 import keelinkLogo from "./images/logo.png";
 
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
@@ -21,6 +17,7 @@ import ClipboardJS from "clipboard";
 import HowToSection from "./sections/howto";
 import CreditSection from "./sections/credits";
 import ContributeSection from "./sections/contribute";
+import Footer from "./sections/footer";
 
 const DEBUG = true;
 
@@ -305,35 +302,35 @@ export default function Home() {
 
   return (
     <main className="container">
-      <div className={styles["page-content"]}>
+      <div className="page-content">
         {/* Navigation Bar */}
-        <nav className={styles.navbar}>
-          <div className={styles.container}>
-            <ul className={styles["navbar-list"]}>
-              <li className={styles["navbar-item"]}>
-                <Link className={styles["navbar-link"]} href="#">
+        <nav className="navbar">
+          <div className="container">
+            <ul className="navbar-list">
+              <li className="navbar-item">
+                <Link className="navbar-link" href="#">
                   <u>KeeLink</u>
                 </Link>
               </li>
-              <li className={styles["navbar-item"]}>
-                <a className={styles["navbar-link"]} href="#howto">
+              <li className="navbar-item">
+                <a className="navbar-link" href="#howto">
                   {" "}
                   How To
                 </a>
               </li>
-              <li className={styles["navbar-item"]}>
-                <Link className={styles["navbar-link"]} href="#howworks">
+              <li className="navbar-item">
+                <Link className="navbar-link" href="#howworks">
                   {" "}
                   How it works{" "}
                 </Link>
               </li>
-              <li className={styles["navbar-item"]}>
-                <Link className={styles["navbar-link"]} href="#credits">
+              <li className="navbar-item">
+                <Link className="navbar-link" href="#credits">
                   Credits
                 </Link>
               </li>
-              <li className={styles["navbar-item"]}>
-                <Link className={styles["navbar-link"]} href="#contribute">
+              <li className="navbar-item">
+                <Link className="navbar-link" href="#contribute">
                   Contribute
                 </Link>
               </li>
@@ -341,11 +338,11 @@ export default function Home() {
           </div>
         </nav>
         {/* Center */}
-        <div className={styles.content}>
+        <div className="content">
           <div className="row">
             <center className="twelve columns">
               <Image
-                className={styles["logo-container"]}
+                className="logo-container"
                 alt="Keelink logo"
                 src={keelinkLogo}
               />
@@ -354,12 +351,12 @@ export default function Home() {
 
           <div
             id="qrplaceholder"
-            className={styles.container}
+            className="container"
             hidden={displayOnlyInfo}
           >
             <div className="row">
               <div className="twelve columns">
-                <p className={styles["content-font"]}>
+                <p className="content-font">
                   <b>
                     Use this QR code to share a credential from Keepass to this
                     device
@@ -380,7 +377,7 @@ export default function Home() {
 
             <div className="row">
               <center className="twelve columns">
-                <div className={styles.qrcode} hidden></div>
+                <div className="qrcode" hidden></div>
               </center>
             </div>
 
@@ -390,7 +387,7 @@ export default function Home() {
 
             <div className="row">
               <div className="twelve columns">
-                <center className={styles["content-font-small"]}>
+                <center className="content-font-small">
                   <b>
                     Your Session ID: <br />{" "}
                     <span id="sidLabel">
@@ -398,7 +395,7 @@ export default function Home() {
                     </span>
                   </b>
                 </center>
-                <p className={styles["content-font"]}>
+                <p className="content-font">
                   <button
                     id="copyUserBtn"
                     data-clipboard-text="no username"
@@ -428,48 +425,10 @@ export default function Home() {
               <div className="twelve columns">&nbsp;</div>
             </div>
           </div>
-          {/* How To */}
           <HowToSection />
           <CreditSection />
           <ContributeSection />
-          <div className={styles["docs-section"]}>
-            <div className={styles.container}>
-              <div className="row">
-                <div className="six columns">
-                  <p>
-                    Brought to you by <b>Andrea Cioni</b>
-                  </p>
-                </div>
-                <div className="six columns">
-                  <p>
-                    Hosted for free on{" "}
-                    <a href="https://fly.io/">
-                      <Image
-                        alt="Fly.io Logo"
-                        height={25}
-                        width={50}
-                        src={flyIoLogo}
-                      />
-                    </a>
-                  </p>
-                </div>
-              </div>
-              <div className="row">
-                <div className="twelve columns">
-                  <p>
-                    <a href="https://github.com/andreacioni/KeeLink">
-                      <Image
-                        alt="Github Logo"
-                        height={50}
-                        width={50}
-                        src={githubLogo}
-                      />
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Footer />
         </div>
       </div>
     </main>

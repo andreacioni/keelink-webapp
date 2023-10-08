@@ -1,8 +1,6 @@
-import styles from "../page.module.css";
-
 export default function HowToSection() {
   return (
-    <div id="howto" className={styles["docs-section"]}>
+    <div id="howto" className="docs-section">
       <h2>How To</h2>
       <p>
         In order to send credentials to this page you first need to follow{" "}

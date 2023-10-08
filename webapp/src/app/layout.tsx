@@ -2,6 +2,7 @@ import "./css/normalize.css";
 import "./css/skeleton.css";
 import "./css/pace.css";
 import "./css/swal.css";
+import "./css/custom.css";
 
 import type { Metadata } from "next";
 import Script from "next/script";

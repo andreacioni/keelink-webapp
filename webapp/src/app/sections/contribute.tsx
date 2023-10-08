@@ -1,10 +1,10 @@
-import styles from "../page.module.css";
-
 import Image from "next/image";
+
+import styles from "./sections.module.css";
 
 export default function ContributeSection() {
   return (
-    <div id="contribute" className={styles["docs-section"]}>
+    <div id="contribute" className="docs-section">
       <h2>Contribute</h2>
       <p>
         KeeLink is a <b>free and no-profit application</b>. If you like and use
@@ -12,8 +12,9 @@ export default function ContributeSection() {
         Remember that is also possible to <b>donate something</b> in order to
         support the development and maintenance of all its parts.
       </p>
-      <div>
+      <center>
         <form
+          className={styles["contribute-form"]}
           action="https://www.paypal.com/cgi-bin/webscr"
           method="post"
           target="_top"
@@ -33,7 +34,7 @@ export default function ContributeSection() {
             height="1"
           />
         </form>
-      </div>
+      </center>
     </div>
   );
 }

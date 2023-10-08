@@ -1,8 +1,6 @@
-import styles from "../page.module.css";
-
 export default function CreditSection() {
   return (
-    <div id="credits" className={styles["docs-section"]}>
+    <div id="credits" className="docs-section">
       <h2>Credits</h2>
       <p>
         KeeLink is designed, developed and supported by <b>Andrea Cioni</b>. All
