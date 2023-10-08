@@ -38,10 +38,10 @@ export default function RootLayout({
 
         <Script
           type="text/javascript"
-          src="libs/pace/pace.js"
+          src="libs/pace.js"
           data-pace-options='{ "ajax": false }'
         />
-        <Script type="text/javascript" src="libs/clipboard/clipboard.min.js" />
+        <Script type="text/javascript" src="libs/clipboard.min.js" />
       </head>
       <body className={raleway.className}>{children}</body>
     </html>

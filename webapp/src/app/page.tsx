@@ -28,6 +28,9 @@ const REMINDER_DELETE_CLIPBOARD = 10000;
 
 const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
+
+const GENERATION_WAIT_TIME = 10 * 1000;
+const WEAK_KEY_SIZE = 2048;
 const DEFAULT_KEY_SIZE = 4096;
 
 const BASE_HOST = "http://localhost:8080";
@@ -40,6 +43,7 @@ interface CredentialsResponse {
 
 let didInitUseEffect1 = false;
 let didInitUseEffect2 = false;
+let didInitUseEffect3 = false;
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -68,6 +72,7 @@ export default function Home() {
     return new JSEncrypt({ default_key_size: keySize.toString() });
   }, [keySize]); */
 
+  // Once the key has been loaded/generated, initialize and wait for credentials to arrive
   useEffect(() => {
     if (didInitUseEffect2) return;
 
@@ -273,6 +278,7 @@ export default function Home() {
     }
   });
 
+  // Load/Generate the key pair.
   useEffect(() => {
     function onInitDone(res: [string, string] | undefined) {
       if (res) {
@@ -319,18 +325,17 @@ export default function Home() {
           log("previous keypair found, using it");
           return jsEncrypt;
         },
-        () => {
+        async () => {
           log("no previous saved key pair available in web storage");
-          return generateKeyPair().then((jsEncrypt) => {
-            saveKeyPair(jsEncrypt.getPublicKey(), jsEncrypt.getPrivateKey());
-            return jsEncrypt;
-          });
+          const jsEncrypt = await generateKeyPair();
+          saveKeyPair(jsEncrypt.getPublicKey(), jsEncrypt.getPrivateKey());
+          return jsEncrypt;
         }
       )
       .then((jsEncrypt) => {
+        jsEncryptRef.current = jsEncrypt;
         setLabelState("waiting_sid");
         requestInit(jsEncrypt).then(onInitDone);
-        jsEncryptRef.current = jsEncrypt;
       });
 
     didInitUseEffect1 = true;
@@ -338,9 +343,25 @@ export default function Home() {
     return () => {
       workerRef.current?.terminate();
     };
-
-    didInitUseEffect1 = true;
   }, [keySize, sessionId]);
+
+  useEffect(() => {
+    if (
+      !didInitUseEffect3 &&
+      labelState == "key_generation" &&
+      keySize == DEFAULT_KEY_SIZE
+    ) {
+      const startTs = new Date();
+      const int = setInterval(() => {
+        const now = new Date();
+        if (now.getTime() > startTs.getTime() + GENERATION_WAIT_TIME) {
+          setLabelState("slow_key_generation");
+          clearInterval(int);
+        }
+      }, 1000);
+      didInitUseEffect3 = true;
+    }
+  });
 
   return (
     <main className="container">
@@ -433,7 +454,14 @@ export default function Home() {
                   <b>
                     Your Session ID: <br />{" "}
                     <span id="sidLabel">
-                      {<SessionIdLabel state={labelState} sid={sessionId} />}
+                      {
+                        <SessionIdLabel
+                          state={labelState}
+                          sid={sessionId}
+                          keySize={keySize}
+                          weakKeySize={WEAK_KEY_SIZE}
+                        />
+                      }
                     </span>
                   </b>
                 </center>
