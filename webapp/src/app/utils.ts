@@ -1,3 +1,5 @@
+const DEBUG = true;
+
 export function PEMtoBase64(pem: string) {
   return pem
     .replace(new RegExp("\\n", "g"), "")
@@ -17,4 +19,12 @@ export function fromSafeBase64(safe: string) {
     .replace(new RegExp("\\n", "g"), "")
     .replace(new RegExp("-", "g"), "+")
     .replace(new RegExp("_", "g"), "/");
+}
+
+export function log(str: any): void {
+  if (DEBUG) console.log(str);
+}
+
+export function warn(str: any): void {
+  if (DEBUG) console.warn(str);
 }

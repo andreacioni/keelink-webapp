@@ -5,12 +5,12 @@ import JSEncrypt from "jsencrypt/lib/index.js";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 
 import keelinkLogo from "./images/logo.png";
 
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
-import { PEMtoBase64, fromSafeBase64, toSafeBase64 } from "./utils";
+import { PEMtoBase64, fromSafeBase64, log, toSafeBase64, warn } from "./utils";
 import { alertError, alertWarn, swal } from "./alerts";
 import QrCodeImage, { QrCodeState } from "./components/qr_code";
 import ClipboardJS from "clipboard";
@@ -18,8 +18,7 @@ import HowToSection from "./sections/howto";
 import CreditSection from "./sections/credits";
 import ContributeSection from "./sections/contribute";
 import Footer from "./sections/footer";
-
-const DEBUG = true;
+import { CopyToClipboardButton } from "./components/button";
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -33,7 +32,7 @@ const GENERATION_WAIT_TIME = 10 * 1000;
 const WEAK_KEY_SIZE = 2048;
 const DEFAULT_KEY_SIZE = 4096;
 
-const BASE_HOST = "http://localhost:8080";
+const BASE_HOST = "";
 
 interface CredentialsResponse {
   status: boolean;
@@ -56,10 +55,10 @@ export default function Home() {
   const workerRef = useRef<Worker>();
 
   const [labelState, setLabelState] = useState<LabelState>("init");
-  const [sessionId, setSessionId] = useState<string | undefined>();
-  const [sessionToken, setSessionToken] = useState<string | undefined>();
-  const [username, setUsername] = useState<string | undefined>();
-  const [password, setPassword] = useState<string | undefined>();
+  const [sessionId, setSessionId] = useState<string>();
+  const [sessionToken, setSessionToken] = useState<string>();
+  const [username, setUsername] = useState<string>();
+  const [password, setPassword] = useState<string>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
 
   /*   const credentialsEventSource = useMemo(() => {
@@ -72,51 +71,34 @@ export default function Home() {
     return new JSEncrypt({ default_key_size: keySize.toString() });
   }, [keySize]); */
 
+  /*useEffect(() => {
+    const clip = new ClipboardJS("#testBtn");
+    clip.on("success", (e) => console.log(e));
+    clip.on("error", (e) => console.error(e));
+  });*/
+
   // Once the key has been loaded/generated, initialize and wait for credentials to arrive
   useEffect(() => {
     if (didInitUseEffect2) return;
 
-    let credentialsEventSource: EventSource;
+    let credentialsEventSource: EventSource | undefined;
     let pollingInterval: NodeJS.Timeout;
 
     function initClipboardButtons(
-      username: string,
+      copyPassword: boolean,
       password: string,
-      copyPassword: boolean
+      username?: string
     ) {
       if (username !== undefined && username !== null) {
         setUsername(username);
-
-        //Copy username to clipboard button
-        var clipCopyUser = new ClipboardJS(".copyUserBtn");
-        clipCopyUser.on("success", function () {
-          log("copy username to clipboard: done!");
-          //copiedSuccess("#copyUserBtn", false);
-          remindDelete();
-        });
-        clipCopyUser.on("error", function (e) {
-          console.error("failed to copy username", e);
-          //copiedError("#copyUserBtn", false);
-        });
       }
 
       setPassword(password);
-      //Copy password to clipboard button
-      var clipCopyPsw = new ClipboardJS(".copyPassBtn");
-      clipCopyPsw.on("success", function () {
-        log("copy password to clipboard: done!");
-        //copiedSuccess("#copyPassBtn", false);
-        remindDelete();
-      });
-      clipCopyPsw.on("error", function (e) {
-        console.error("failed to copy password", e);
-        //copiedError("#copyPassBtn", false);
-      });
 
       //Copy password if needed
-      //if (copyPassword) {
-      //  $("#copyPassBtn").click();
-      //}
+      if (copyPassword) {
+        //$("#copyPassBtn").click();
+      }
 
       //Clear clipboard button
       var clipClear = new ClipboardJS("#clearBtn");
@@ -144,6 +126,20 @@ export default function Home() {
       setQrCodeState("reload");
       setLabelState("invalidated");
     }
+
+    async function onCredentialsReceived(creds: string[]) {
+      const [decryptedUsername, decryptedPsw] = creds;
+      const value = await swal.fire({
+        title: "Credentials received!",
+        text: "Would you copy your password on clipboard? (Also remember to clear your clipboard after usage!)",
+        icon: "success",
+        confirmButtonText: "Copy",
+      });
+
+      initClipboardButtons(value.isConfirmed, decryptedUsername, decryptedPsw);
+      invalidateSession();
+    }
+
     function initAsyncAjaxRequestSSE() {
       credentialsEventSource = new EventSource(
         `${BASE_HOST}/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
@@ -154,23 +150,28 @@ export default function Home() {
           console.error("error receiving sse message:", err);
           warn("failing back to polling");
           initAsyncAjaxRequest();
-          credentialsEventSource.close();
+          credentialsEventSource?.close();
           setSessionId(undefined);
         };
         credentialsEventSource.onmessage = (event) => {
           log(`message received: ${event.data}`);
-          let creds = JSON.parse(event.data);
+          let creds = checkForCredentials(
+            jsEncryptRef.current!,
+            JSON.parse(event.data)
+          );
 
-          if (creds.status) {
-            log("credentials received");
-            onCredentialsReceived(jsEncryptRef.current!, creds);
+          if (creds && creds.length > 0) {
+            onCredentialsReceived(creds);
           }
         };
         setTimeout(async function () {
           //Channel is not closed (2) means we did not receive the credentials from the server
           //This should never be true because we want the server to terminate the connection before
           //timeout expires.
-          if (credentialsEventSource.readyState != 2) {
+          if (
+            credentialsEventSource &&
+            credentialsEventSource.readyState != 2
+          ) {
             warn("credentials NOT received before timeout");
             invalidateSession();
             await alertWarn(
@@ -198,9 +199,7 @@ export default function Home() {
               `${BASE_HOST}/getcredforsid.php?sid=${sessionId}&token=${sessionToken}`
             )
               .then((res) => res.json())
-              .then((json) =>
-                onCredentialsReceived(jsEncryptRef.current!, json)
-              )
+              .then((json) => checkForCredentials(jsEncryptRef.current!, json))
               .finally(() => (requestFinished = true));
           } else {
             log("backoff!");
@@ -220,12 +219,13 @@ export default function Home() {
       }, 1000 * INVALIDATE_TIMEOUT_SEC);
     }
 
-    function onCredentialsReceived(
+    function checkForCredentials(
       jsEncrypt: JSEncrypt,
       data: CredentialsResponse
-    ) {
+    ): string[] {
       if (data != undefined && data.status === true) {
-        let decryptedUsername: string, decryptedPsw: string;
+        let decryptedUsername: string | undefined,
+          decryptedPsw: string | undefined;
 
         if (data.username === undefined || data.username === null) {
           log("Username was not received");
@@ -244,32 +244,21 @@ export default function Home() {
           decryptedPsw = jsEncrypt.decrypt(data.password) || "";
           log("Decrypted password: " + decryptedPsw);
 
-          if (decryptedPsw) {
-            //Username is not required for next steps
-            swal
-              .fire({
-                title: "Credentials received!",
-                text: "Would you copy your password on clipboard? (Also remember to clear your clipboard after usage!)",
-                icon: "success",
-                confirmButtonText: "Copy",
-              })
-              .then((value) => {
-                initClipboardButtons(
-                  decryptedUsername,
-                  decryptedPsw,
-                  value.isConfirmed
-                );
-                invalidateSession();
-              });
+          invalidateSession();
+
+          if (decryptedUsername) {
+            return [decryptedPsw, decryptedUsername];
+          } else if (decryptedPsw) {
+            return [decryptedPsw];
           } else {
             alertError(
               "Error",
               "There was an error, can't decrypt your credentials. Try again..."
             );
-            invalidateSession();
           }
         }
       }
+      return [];
     }
 
     if (sessionId && sessionToken && jsEncryptRef) {
@@ -465,28 +454,49 @@ export default function Home() {
                     </span>
                   </b>
                 </center>
-                <p className="content-font">
-                  <button
-                    id="copyUserBtn"
-                    data-clipboard-text="no username"
-                    hidden
-                  >
-                    Copy Username
-                  </button>
-                  <button
-                    id="copyPassBtn"
-                    data-clipboard-text="no password"
-                    hidden
-                  >
-                    Copy Password
-                  </button>
+                <p className="content-font" style={{ paddingTop: "20px" }}>
+                  {/* Username */}
+                  {username && (
+                    <CopyToClipboardButton
+                      id="copyUserBtn"
+                      text="Copy Username"
+                      value={username}
+                      onSuccess={remindDelete}
+                      onSuccessText="Copied!"
+                      onErrorText="Error!"
+                    />
+                  )}
+
+                  {/* Password */}
+
+                  {password && (
+                    <CopyToClipboardButton
+                      id="copyPassBtn"
+                      text="Copy Password"
+                      value={password}
+                      onSuccess={remindDelete}
+                      onSuccessText="Copied!"
+                      onErrorText="Error!"
+                    />
+                  )}
+
                   <br />
-                  <button id="clearBtn" data-clipboard-text=" " hidden>
-                    Clear clipboard
-                  </button>
-                  <button id="reloadBtn" hidden>
-                    Reload
-                  </button>
+
+                  {/* Clear & Reload button if password received */}
+                  {password && (
+                    <>
+                      <CopyToClipboardButton
+                        id="clearBtn"
+                        text="Clear clipboard"
+                        value=" "
+                        onSuccessText="Cleared!"
+                        onErrorText="Error!"
+                      />
+                      <button id="reloadBtn" onClick={refreshPage}>
+                        Reload
+                      </button>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -524,11 +534,15 @@ async function requestInit(
   log("PEMtoBase64: " + PEMtoBase64(crypt.getPublicKey()));
   log("toSafeBase64: " + toSafeBase64(PEMtoBase64(crypt.getPublicKey())));
 
-  const body = { PUBLIC_KEY: toSafeBase64(PEMtoBase64(crypt.getPublicKey())) };
+  const formData = new FormData();
+  formData.append(
+    "PUBLIC_KEY",
+    toSafeBase64(PEMtoBase64(crypt.getPublicKey()))
+  );
 
   const res = await fetch(`${BASE_HOST}/init.php`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body: formData,
   });
 
   if (res.status === 200) {
@@ -600,14 +614,6 @@ function hasSavedKeyPair() {
   }
 
   return false;
-}
-
-function log(str: any): void {
-  if (DEBUG) console.log(str);
-}
-
-function warn(str: any): void {
-  if (DEBUG) console.warn(str);
 }
 
 function refreshPage() {
