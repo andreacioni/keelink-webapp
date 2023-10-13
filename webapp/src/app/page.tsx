@@ -19,6 +19,7 @@ import CreditSection from "./sections/credits";
 import ContributeSection from "./sections/contribute";
 import Footer from "./sections/footer";
 import { CopyToClipboardButton } from "./components/button";
+import HowItWorksSection from "./sections/how_it_works";
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -32,7 +33,7 @@ const GENERATION_WAIT_TIME = 10 * 1000;
 const WEAK_KEY_SIZE = 2048;
 const DEFAULT_KEY_SIZE = 4096;
 
-const BASE_HOST = "";
+const BASE_HOST = "http://localhost:8080";
 
 interface CredentialsResponse {
   status: boolean;
@@ -506,6 +507,7 @@ export default function Home() {
             </div>
           </div>
           <HowToSection />
+          <HowItWorksSection />
           <CreditSection />
           <ContributeSection />
           <Footer />
