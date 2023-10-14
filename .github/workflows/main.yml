@@ -11,5 +11,15 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v2
+        - name: Set up Node.js
+          uses: actions/setup-node@v2
+          with:
+            node-version: 18
+        - name: Install dependencies
+          run: |
+            cd webapp
+            npm install
+            npm run build && npm run move_to_static_dir
+            cd ..
         - uses: superfly/flyctl-actions/setup-flyctl@master
         - run: flyctl deploy --remote-only
