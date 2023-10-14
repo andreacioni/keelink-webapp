@@ -7,6 +7,7 @@ const REMINDER_DELETE_CLIPBOARD = 10000;
 interface CopyToClipboardButtonProps {
   id: string;
   text: string;
+  refs?: any;
   value?: string;
   className?: string;
   onSuccessText?: string;
@@ -54,7 +55,11 @@ export function CopyToClipboardButton(props: CopyToClipboardButtonProps) {
     didInit.current = true;
   });
   return (
-    <button id={props.id} data-clipboard-text={props.value || "no value"}>
+    <button
+      ref={props.refs}
+      id={props.id}
+      data-clipboard-text={props.value || "no value"}
+    >
       {displayText}
     </button>
   );

@@ -11,7 +11,7 @@ import keelinkLogo from "./images/logo.png";
 
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
 import { PEMtoBase64, fromSafeBase64, log, toSafeBase64, warn } from "./utils";
-import { alertError, alertWarn, swal } from "./alerts";
+import { alertError, alertInfo, alertWarn, swal } from "./alerts";
 import QrCodeImage, { QrCodeState } from "./components/qr_code";
 import ClipboardJS from "clipboard";
 import HowToSection from "./sections/howto";
@@ -32,7 +32,7 @@ const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 
 const GENERATION_WAIT_TIME = 10 * 1000;
 
-const BASE_HOST = "http://localhost:8080";
+const BASE_HOST = "";
 
 interface CredentialsResponse {
   status: boolean;
@@ -61,10 +61,12 @@ export default function Home() {
   const [password, setPassword] = useState<string>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
 
-  const howToRef = useRef(null);
-  const howItWorksRef = useRef(null);
-  const creditsRef = useRef(null);
-  const contributeRef = useRef(null);
+  const howToRef = useRef<any>();
+  const howItWorksRef = useRef<any>();
+  const creditsRef = useRef<any>();
+  const contributeRef = useRef<any>();
+
+  const clickRef = useRef<any>();
 
   /*   const credentialsEventSource = useMemo(() => {
     if (sessionId && sessionToken) {
@@ -89,21 +91,12 @@ export default function Home() {
     let credentialsEventSource: EventSource | undefined;
     let pollingInterval: NodeJS.Timeout;
 
-    function initClipboardButtons(
-      copyPassword: boolean,
-      password: string,
-      username?: string
-    ) {
+    function initClipboardButtons(password: string, username?: string) {
       if (username !== undefined && username !== null) {
         setUsername(username);
       }
 
       setPassword(password);
-
-      //Copy password if needed
-      if (copyPassword) {
-        //$("#copyPassBtn").click();
-      }
 
       //Clear clipboard button
       var clipClear = new ClipboardJS("#clearBtn");
@@ -134,14 +127,22 @@ export default function Home() {
 
     async function onCredentialsReceived(creds: string[]) {
       const [decryptedUsername, decryptedPsw] = creds;
-      const value = await swal.fire({
+      initClipboardButtons(decryptedUsername, decryptedPsw);
+
+      const copyPsw = await swal.fire({
         title: "Credentials received!",
         text: "Would you copy your password on clipboard? (Also remember to clear your clipboard after usage!)",
         icon: "success",
         confirmButtonText: "Copy",
       });
 
-      initClipboardButtons(value.isConfirmed, decryptedUsername, decryptedPsw);
+      if (copyPsw) {
+        log("copy directly on clipboard");
+        const el = clickRef?.current;
+        log("element: " + el);
+        el?.click();
+      }
+
       invalidateSession();
     }
 
@@ -495,6 +496,7 @@ export default function Home() {
                       id="copyPassBtn"
                       text="Copy Password"
                       value={password}
+                      refs={clickRef}
                       onSuccess={remindDelete}
                       onSuccessText="Copied!"
                       onErrorText="Error!"
@@ -663,7 +665,7 @@ function remindDelete() {
   }, REMINDER_DELETE_CLIPBOARD);
 }
 
-function scrollToRef(evt?: any, ref?: any) {
+function scrollToRef(evt?: any, refs?: any) {
   evt?.preventDefault();
-  ref?.current?.scrollIntoView({ behavior: "smooth" });
+  refs?.current?.scrollIntoView({ behavior: "smooth" });
 }

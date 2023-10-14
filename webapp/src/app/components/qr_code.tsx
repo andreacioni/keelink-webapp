@@ -38,7 +38,7 @@ function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
   const sidUrl = "ksid://" + props.sid!;
   return (
     <div className={styles.fadeIn}>
-      <QRCode value={sidUrl} size={170} href={sidUrl}></QRCode>
+      <QRCode value={sidUrl} size={200} href={sidUrl}></QRCode>
     </div>
   );
 }
@@ -46,7 +46,7 @@ function QrCodeValidSessionId(props: QrCodeValidSessionIdProps) {
 function QrCodeGenerating() {
   return (
     <div id="qrcode_loading">
-      <Image alt="Loading QR Code" src={qrLoading} height={220} width={220} />
+      <Image alt="Loading QR Code" src={qrLoading} height={250} />
     </div>
   );
 }
@@ -55,7 +55,7 @@ function QrCodeReload() {
   return (
     <div id="qrcode_reload">
       <a href="#" onClick={() => location.reload()}>
-        <Image alt="Reload QR Code" src={qrReload} height={220} width={220} />
+        <Image alt="Reload QR Code" src={qrReload} height={205} />
       </a>
     </div>
   );
