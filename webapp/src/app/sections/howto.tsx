@@ -1,6 +1,10 @@
-export default function HowToSection() {
+export interface HowToSectionProps {
+  refs: any;
+}
+
+export default function HowToSection(props: HowToSectionProps) {
   return (
-    <div id="howto" className="docs-section">
+    <div ref={props.refs} className="docs-section">
       <h2>How To</h2>
       <p>
         In order to send credentials to this page you first need to follow{" "}

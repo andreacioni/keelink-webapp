@@ -2,9 +2,13 @@ import Image from "next/image";
 
 import styles from "./sections.module.css";
 
-export default function ContributeSection() {
+export interface ContributeSectionProps {
+  refs: any;
+}
+
+export default function ContributeSection(props: ContributeSectionProps) {
   return (
-    <div id="contribute" className="docs-section">
+    <div ref={props.refs} className="docs-section">
       <h2>Contribute</h2>
       <p>
         KeeLink is a <b>free and no-profit application</b>. If you like and use

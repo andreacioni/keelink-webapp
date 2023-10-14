@@ -1,6 +1,12 @@
-export default function HowItWorksSection() {
+import { DEFAULT_KEY_SIZE } from "../constant";
+
+export interface HowItWorksSectionProps {
+  refs: any;
+}
+
+export default function HowItWorksSection(props: HowItWorksSectionProps) {
   return (
-    <div id="howworks" className="docs-section">
+    <div ref={props.refs} className="docs-section">
       <h2>How it works</h2>
       <p>
         <i>
@@ -20,8 +26,8 @@ export default function HowItWorksSection() {
               camera. QR Code contains a simple URL as{" "}
               <i>ksid://yourpersonalanduniquesessionid</i>, so when the QR code
               is correctly parsed, the credentials are, firstly, encrypted with
-              an <b>RSA 2048 bit</b> public key and then sent to a database and
-              associated with{" "}
+              an <b>RSA {DEFAULT_KEY_SIZE} bit</b> public key and then sent to a
+              database and associated with{" "}
               <i>`&apos;`yourpersonalanduniquesessionid`&apos;`</i>.{" "}
               <b>No other information are sent over network</b>,{" "}
               <b>that is important for you</b> because it is essential for me to

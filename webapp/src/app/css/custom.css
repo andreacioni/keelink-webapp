@@ -46,7 +46,8 @@
 /*From Skelethon site*/
 
 .page-content {
-  max-width: 800px; }
+  max-width: 800px;
+margin: auto; }
 .header {
   margin-top: 6rem;
   text-align: center; }

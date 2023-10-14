@@ -1,6 +1,10 @@
-export default function CreditSection() {
+export interface CreditSectionProps {
+  refs: any;
+}
+
+export default function CreditSection(props: CreditSectionProps) {
   return (
-    <div id="credits" className="docs-section">
+    <div ref={props.refs} className="docs-section">
       <h2>Credits</h2>
       <p>
         KeeLink is designed, developed and supported by <b>Andrea Cioni</b>. All

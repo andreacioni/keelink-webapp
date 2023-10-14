@@ -20,6 +20,7 @@ import ContributeSection from "./sections/contribute";
 import Footer from "./sections/footer";
 import { CopyToClipboardButton } from "./components/button";
 import HowItWorksSection from "./sections/how_it_works";
+import { DEFAULT_KEY_SIZE, WEAK_KEY_SIZE } from "./constant";
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -30,8 +31,6 @@ const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 
 const GENERATION_WAIT_TIME = 10 * 1000;
-const WEAK_KEY_SIZE = 2048;
-const DEFAULT_KEY_SIZE = 4096;
 
 const BASE_HOST = "http://localhost:8080";
 
@@ -61,6 +60,11 @@ export default function Home() {
   const [username, setUsername] = useState<string>();
   const [password, setPassword] = useState<string>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
+
+  const howToRef = useRef(null);
+  const howItWorksRef = useRef(null);
+  const creditsRef = useRef(null);
+  const contributeRef = useRef(null);
 
   /*   const credentialsEventSource = useMemo(() => {
     if (sessionId && sessionToken) {
@@ -366,24 +370,40 @@ export default function Home() {
                 </Link>
               </li>
               <li className="navbar-item">
-                <a className="navbar-link" href="#howto">
+                <Link
+                  className="navbar-link"
+                  onClick={(e) => scrollToRef(e, howToRef)}
+                  href="#howto"
+                >
                   {" "}
                   How To
-                </a>
+                </Link>
               </li>
               <li className="navbar-item">
-                <Link className="navbar-link" href="#howworks">
+                <Link
+                  className="navbar-link"
+                  onClick={(e) => scrollToRef(e, howItWorksRef)}
+                  href="#howworks"
+                >
                   {" "}
                   How it works{" "}
                 </Link>
               </li>
               <li className="navbar-item">
-                <Link className="navbar-link" href="#credits">
+                <Link
+                  className="navbar-link"
+                  onClick={(e) => scrollToRef(e, creditsRef)}
+                  href="#credits"
+                >
                   Credits
                 </Link>
               </li>
               <li className="navbar-item">
-                <Link className="navbar-link" href="#contribute">
+                <Link
+                  className="navbar-link"
+                  onClick={(e) => scrollToRef(e, contributeRef)}
+                  href="#contribute"
+                >
                   Contribute
                 </Link>
               </li>
@@ -506,10 +526,10 @@ export default function Home() {
               <div className="twelve columns">&nbsp;</div>
             </div>
           </div>
-          <HowToSection />
-          <HowItWorksSection />
-          <CreditSection />
-          <ContributeSection />
+          <HowToSection refs={howToRef} />
+          <HowItWorksSection refs={howItWorksRef} />
+          <CreditSection refs={creditsRef} />
+          <ContributeSection refs={contributeRef} />
           <Footer />
         </div>
       </div>
@@ -641,4 +661,9 @@ function remindDelete() {
       });
     }
   }, REMINDER_DELETE_CLIPBOARD);
+}
+
+function scrollToRef(evt?: any, ref?: any) {
+  evt?.preventDefault();
+  ref?.current?.scrollIntoView({ behavior: "smooth" });
 }
