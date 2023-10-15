@@ -1,0 +1,29 @@
+{
+  "name": "keelink-webapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "move_to_static_dir": "rm -rf ../static/* && mv out/* ../static/"
+  },
+  "dependencies": {
+    "@types/node": "20.6.3",
+    "@types/react": "18.2.22",
+    "@types/react-dom": "18.2.7",
+    "clipboard": "^2.0.11",
+    "eslint": "8.50.0",
+    "eslint-config-next": "13.5.2",
+    "jsencrypt": "^3.2.1",
+    "next": "13.5.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-icons": "^4.11.0",
+    "react-qr-code": "^2.0.12",
+    "sweetalert2": "^11.7.32",
+    "sweetalert2-react-content": "^5.0.7",
+    "typescript": "5.2.2"
+  }
+}

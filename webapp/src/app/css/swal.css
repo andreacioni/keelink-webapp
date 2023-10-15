@@ -1,0 +1,18 @@
+.swal-confirm-button {
+  background-color: #6ccbfb
+}
+
+/* Directive belows overrides SWAL defaults to integrated with skeleton. */
+
+.swal2-popup {
+  font-size: 1.5rem !important;
+}
+
+div:where(.swal2-container) button:where(.swal2-styled) {
+  background-color: #6ccbfb !important;
+  padding: 0px 2em !important;
+}
+
+.swal2-popup .swal2-styled:focus {
+  box-shadow: none !important;
+}

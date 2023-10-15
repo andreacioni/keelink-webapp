@@ -1,0 +1,10 @@
+.image-text-alignment {
+  display: grid;
+  grid-template-columns: auto 1fr; /* Adjust as needed to control the width of the image and text */
+  gap: 10px; /* Adjust this value as needed to control the spacing between the image and text */
+}
+
+.contribute-form {
+  padding-top: 4rem;
+  margin-bottom: 0;
+}
