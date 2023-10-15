@@ -32,7 +32,7 @@ const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 
 const GENERATION_WAIT_TIME = 10 * 1000;
 
-const BASE_HOST = "";
+const BASE_HOST = "http://localhost:8080";
 
 interface CredentialsResponse {
   status: boolean;
@@ -271,7 +271,7 @@ export default function Home() {
       initAsyncAjaxRequestSSE();
       didInitUseEffect2 = true;
     }
-  });
+  }, [sessionId, sessionToken, jsEncryptRef]);
 
   // Load/Generate the key pair.
   useEffect(() => {
@@ -351,12 +351,12 @@ export default function Home() {
         const now = new Date();
         if (now.getTime() > startTs.getTime() + GENERATION_WAIT_TIME) {
           setLabelState("slow_key_generation");
-          clearInterval(int);
         }
       }, 1000);
       didInitUseEffect3 = true;
+      return () => clearInterval(int);
     }
-  });
+  }, [labelState, keySize]);
 
   return (
     <main className="container">
