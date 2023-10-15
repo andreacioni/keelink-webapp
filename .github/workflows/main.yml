@@ -15,11 +15,12 @@ jobs:
           uses: actions/setup-node@v2
           with:
             node-version: 18
-        - name: Install dependencies
+        - name: Install & Build
           run: |
             cd webapp
-            npm install
+            npm ci
             npm run build && npm run move_to_static_dir
             cd ..
+            ls -lah static/
         - uses: superfly/flyctl-actions/setup-flyctl@master
         - run: flyctl deploy --remote-only
