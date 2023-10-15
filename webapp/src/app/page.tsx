@@ -32,7 +32,7 @@ const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
 
 const GENERATION_WAIT_TIME = 10 * 1000;
 
-const BASE_HOST = "http://localhost:8080";
+const BASE_HOST = "";
 
 interface CredentialsResponse {
   status: boolean;
