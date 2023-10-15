@@ -10,7 +10,7 @@ processes = []
   buildpacks = ["gcr.io/paketo-buildpacks/go"]
 
 [build.args]
-  BP_KEEP_FILES = "/workspace/config.yaml:config.yaml:webapp/static/*"
+  BP_KEEP_FILES = "/workspace/config.yaml:config.yaml:static/*"
 
 [env]
   PORT = "8080"
