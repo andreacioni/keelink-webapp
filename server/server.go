@@ -44,6 +44,7 @@ func staticHandlers(group *gin.RouterGroup) {
 	group.Static("/_next", "./static/_next")
 	group.Static("/libs", "./static/libs")
 	group.StaticFile("/404.html", "./static/404.html")
+	group.StaticFile("/privacy-policy.html", "./static/privacy-policy.html")
 	group.StaticFile("/", "./static/index.html")
 	group.StaticFile("/favicon.ico", "./static/favicon.ico")
 	group.StaticFile("/index.txt", "./static/index.txt")
