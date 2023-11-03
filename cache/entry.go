@@ -5,12 +5,12 @@ import (
 )
 
 type CacheEntry struct {
-	IP                string
-	SessionID         string
-	Token             string
-	PublicKey         string
-	Username          *string `binding:"exists"`
-	EncryptedPassword *string `binding:"exists"`
+	IP                string  `redis:"ip"`
+	SessionID         string  `redis:"session-id"`
+	Token             string  `redis:"token"`
+	PublicKey         string  `redis:"pub-key"`
+	Username          *string `binding:"exists" redis:"username"`
+	EncryptedPassword *string `binding:"exists" redis:"enc-password"`
 }
 
 func (c CacheEntry) IsEmpty() {

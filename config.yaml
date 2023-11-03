@@ -1,5 +1,11 @@
 host: "0.0.0.0"
 port: 8080
+#sslCert: ./fullchain.pem
+#sslKey: ./privkey.pem
 cache:
+  redis:
+    host: redis-16396.c73.us-east-1-2.ec2.cloud.redislabs.com:16396
+    password: lZyq9kOIGuIC9inulEUrCuSC2JFC4P6E
   expiresInSec: 120
   purgesEverySec: 240
+  

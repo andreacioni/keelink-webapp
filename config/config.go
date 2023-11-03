@@ -14,16 +14,24 @@ type Configuration struct {
 	//Network
 	Host    string
 	Port    int
-	SSLCert string  `yaml:"sslCert"`
-	SSLKey  string  `yaml:"sslKey"`
+	SSLCert string `yaml:"sslCert"`
+	SSLKey  string `yaml:"sslKey"`
 
 	//Cache
 	Cache Cache `yaml:"cache"`
 }
 
 type Cache struct {
-	ExpiresInSec   time.Duration `yaml:"expiresInSec"`
-	PurgesEverySec time.Duration `yaml:"purgesEverySec"`
+	ExpiresInSec   uint64 `yaml:"expiresInSec"`
+	PurgesEverySec uint64 `yaml:"purgesEverySec"`
+
+	//Redis
+	Redis Redis `yaml:"redis"`
+}
+
+type Redis struct {
+	Host     string `yaml:"host"`
+	Password string `yaml:"password"`
 }
 
 var (
@@ -55,8 +63,8 @@ func LoadEnv() error {
 		Host: os.Getenv("HOST"),
 		Port: parseInt(os.Getenv("PORT")),
 		Cache: Cache{
-			ExpiresInSec:   parseDuration(os.Getenv("EXPIRES_IN_SEC")),
-			PurgesEverySec: parseDuration(os.Getenv("PURGES_EVERY_SEC")),
+			ExpiresInSec:   parseUint(os.Getenv("EXPIRES_IN_SEC")),
+			PurgesEverySec: parseUint(os.Getenv("PURGES_EVERY_SEC")),
 		},
 	}
 
@@ -77,6 +85,16 @@ func parseInt(str string) int {
 
 func parseDuration(str string) time.Duration {
 	duration, err := time.ParseDuration(str)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return duration
+}
+
+func parseUint(str string) uint64 {
+	duration, err := strconv.ParseUint(str, 10, 64)
 
 	if err != nil {
 		panic(err)
