@@ -1,4 +1,7 @@
+import { clearKeyPair, setSavedKeySize } from "../data";
+import { refreshPage } from "../utils";
 import IconWithTooltip from "./icon_with_tooltip";
+import KeySizeSelector from "./key_size_selector";
 import styles from "./session_id_labels.module.css";
 
 export type LabelState =
@@ -20,17 +23,17 @@ export const LABEL_STATES: LabelState[] = [
 
 interface SessionIdLabelProps {
   state: LabelState;
-  sid?: String;
+  sid?: string;
   keySize?: number;
   weakKeySize?: number;
 }
 
 interface WaitingCredentialsLabelProps {
-  sid: String;
+  sid: string;
 }
 
 interface InvalidatedCredentialsLabelProps {
-  sid: String;
+  sid: string;
 }
 
 interface GenerateKeyPairLabelProps {
@@ -68,7 +71,7 @@ function InvalidatedCredentialsLabel(props: InvalidatedCredentialsLabelProps) {
 }
 
 function WaitingCredentialsLabel(props: WaitingCredentialsLabelProps) {
-  return <span>{props.sid}</span>;
+  return <span>{props.sid} </span>;
 }
 
 function WaitingSidLabel() {
@@ -83,7 +86,7 @@ function GenerateKeyPairLabel(props: GenerateKeyPairLabelProps) {
       <span>This process may take a while</span>
       <span style={{ paddingLeft: "5px" }}>
         <IconWithTooltip
-          text={`Be patient. Key generation is done just once and aims to build a robust set of asymmetric secrets. This process could last even one minute in older devices.`}
+          text={`Be patient. Key generation (${props.keySize} bit) is done just once and aims to build a robust set of asymmetric secrets. This process could last even one minute in older devices.`}
         />
       </span>
     </>

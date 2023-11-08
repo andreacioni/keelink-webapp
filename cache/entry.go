@@ -9,8 +9,8 @@ type CacheEntry struct {
 	SessionID         string  `redis:"session-id"`
 	Token             string  `redis:"token"`
 	PublicKey         string  `redis:"pub-key"`
-	Username          *string `binding:"exists" redis:"username"`
-	EncryptedPassword *string `binding:"exists" redis:"enc-password"`
+	Username          *string `redis:"username"`
+	EncryptedPassword *string `redis:"enc-password"`
 }
 
 func (c CacheEntry) IsEmpty() {

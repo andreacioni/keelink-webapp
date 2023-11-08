@@ -10,7 +10,15 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import keelinkLogo from "./images/logo.png";
 
 import SessionIdLabel, { LabelState } from "./components/session_id_label";
-import { PEMtoBase64, fromSafeBase64, log, toSafeBase64, warn } from "./utils";
+import {
+  PEMtoBase64,
+  base64ToArrayBuffer,
+  fromSafeBase64,
+  log,
+  refreshPage,
+  toSafeBase64,
+  warn,
+} from "./utils";
 import { alertError, alertInfo, alertWarn, swal } from "./alerts";
 import QrCodeImage, { QrCodeState } from "./components/qr_code";
 import ClipboardJS from "clipboard";
@@ -21,18 +29,23 @@ import Footer from "./sections/footer";
 import { CopyToClipboardButton } from "./components/button";
 import HowItWorksSection from "./sections/how_it_works";
 import { DEFAULT_KEY_SIZE, WEAK_KEY_SIZE } from "./constant";
+import KeySizeSelector from "./components/key_size_selector";
+import {
+  clearKeyPair,
+  getSavedKeySize,
+  loadKeyPair,
+  saveKeyPair,
+  setSavedKeySize,
+} from "./data";
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
 
 const REMINDER_DELETE_CLIPBOARD = 10000;
 
-const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
-const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
-
 const GENERATION_WAIT_TIME = 10 * 1000;
 
-const BASE_HOST = "";
+const BASE_HOST = "http://localhost:8080";
 
 interface CredentialsResponse {
   status: boolean;
@@ -42,17 +55,14 @@ interface CredentialsResponse {
 
 let didInitUseEffect1 = false;
 let didInitUseEffect2 = false;
-let didInitUseEffect3 = false;
 
 export default function Home() {
   const searchParams = useSearchParams();
   const displayOnlyInfo = searchParams?.get("onlyinfo") === "true";
-  const keySizeStr = searchParams?.get("key_size");
-
-  const keySize = keySizeStr ? parseInt(keySizeStr) : DEFAULT_KEY_SIZE;
 
   const jsEncryptRef = useRef<JSEncrypt>();
   const workerRef = useRef<Worker>();
+  const [keySize, setKeySize] = useState<number>();
 
   const [labelState, setLabelState] = useState<LabelState>("init");
   const [sessionId, setSessionId] = useState<string>();
@@ -83,6 +93,26 @@ export default function Home() {
     clip.on("success", (e) => console.log(e));
     clip.on("error", (e) => console.error(e));
   });*/
+
+  useEffect(() => {
+    const keySizeSaved = getSavedKeySize() || DEFAULT_KEY_SIZE;
+    const keySizeInput = searchParams?.get("key_size")
+      ? parseInt(searchParams?.get("key_size")!)
+      : null;
+
+    if (keySizeInput && keySizeInput != keySizeSaved) {
+      log(
+        `input key size present, that size is different from saved one (${keySizeInput} != ${keySizeSaved}), generate a new one`
+      );
+      setSavedKeySize(keySizeInput);
+      setKeySize(keySizeInput);
+      clearKeyPair();
+      refreshPage();
+      return;
+    }
+
+    setKeySize(keySizeSaved);
+  }, [searchParams]);
 
   // Once the key has been loaded/generated, initialize and wait for credentials to arrive
   useEffect(() => {
@@ -309,7 +339,7 @@ export default function Home() {
       });
     }
 
-    if (didInitUseEffect1) return;
+    if (didInitUseEffect1 || !keySize) return;
 
     setLabelState("key_generation");
     setQrCodeState("generating");
@@ -341,11 +371,7 @@ export default function Home() {
   }, [keySize, sessionId]);
 
   useEffect(() => {
-    if (
-      !didInitUseEffect3 &&
-      labelState == "key_generation" &&
-      keySize == DEFAULT_KEY_SIZE
-    ) {
+    if (labelState == "key_generation") {
       const startTs = new Date();
       const int = setInterval(() => {
         const now = new Date();
@@ -353,7 +379,7 @@ export default function Home() {
           setLabelState("slow_key_generation");
         }
       }, 1000);
-      didInitUseEffect3 = true;
+
       return () => clearInterval(int);
     }
   }, [labelState, keySize]);
@@ -469,14 +495,14 @@ export default function Home() {
                         <SessionIdLabel
                           state={labelState}
                           sid={sessionId}
-                          keySize={keySize}
+                          keySize={keySize || 0}
                           weakKeySize={WEAK_KEY_SIZE}
                         />
                       }
                     </span>
                   </b>
                 </center>
-                <p className="content-font" style={{ paddingTop: "20px" }}>
+                <p className="content-font">
                   {/* Username */}
                   {username && (
                     <CopyToClipboardButton
@@ -503,11 +529,10 @@ export default function Home() {
                     />
                   )}
 
-                  <br />
-
                   {/* Clear & Reload button if password received */}
                   {password && (
                     <>
+                      <br />
                       <CopyToClipboardButton
                         id="clearBtn"
                         text="Clear clipboard"
@@ -521,6 +546,23 @@ export default function Home() {
                     </>
                   )}
                 </p>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="twelve columns">
+                <center>
+                  {keySize && (
+                    <KeySizeSelector
+                      currentSize={keySize!}
+                      onSelect={(ks) => {
+                        clearKeyPair();
+                        setSavedKeySize(ks);
+                        refreshPage();
+                      }}
+                    />
+                  )}
+                </center>
               </div>
             </div>
 
@@ -586,62 +628,6 @@ async function requestInit(
       `Error code: ${res.status} (${res.statusText})`
     );
   }
-}
-
-function loadKeyPair(): Promise<JSEncrypt> {
-  return new Promise<JSEncrypt>((resolve, reject) => {
-    //check for presence of an already defined key pair in local storage
-
-    if (hasSavedKeyPair()) {
-      //load key from local storage
-      const crypt = new JSEncrypt();
-      crypt.setPublicKey(localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME)!);
-      crypt.setPrivateKey(localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME)!);
-
-      resolve(crypt);
-    } else {
-      reject();
-    }
-  });
-}
-
-function saveKeyPair(public_key: string, private_key: string) {
-  //save generated key pair on the browser internal storage
-  if (supportLocalStorage()) {
-    log("web storage available, saving generated keys...");
-
-    localStorage.setItem(LOCAL_STORAGE_PUBLIC_NAME, public_key);
-    localStorage.setItem(LOCAL_STORAGE_PRIVATE_NAME, private_key);
-
-    log("saved!");
-  } else {
-    warn("web storage NOT available");
-  }
-}
-
-function supportLocalStorage() {
-  return typeof Storage !== "undefined";
-}
-
-function hasSavedKeyPair() {
-  if (supportLocalStorage()) {
-    var privateKey = localStorage.getItem(LOCAL_STORAGE_PRIVATE_NAME);
-    var publicKey = localStorage.getItem(LOCAL_STORAGE_PUBLIC_NAME);
-    if (
-      privateKey !== undefined &&
-      privateKey !== null &&
-      publicKey !== undefined &&
-      publicKey !== null
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function refreshPage() {
-  window.location.reload();
 }
 
 function remindDelete() {

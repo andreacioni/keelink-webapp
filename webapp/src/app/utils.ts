@@ -21,10 +21,18 @@ export function fromSafeBase64(safe: string) {
     .replace(new RegExp("_", "g"), "/");
 }
 
+export function base64ToArrayBuffer(base64: string): Buffer {
+  return Buffer.from(base64, "base64");
+}
+
 export function log(str: any): void {
   if (DEBUG) console.log(str);
 }
 
 export function warn(str: any): void {
   if (DEBUG) console.warn(str);
+}
+
+export function refreshPage() {
+  window.location.reload();
 }
