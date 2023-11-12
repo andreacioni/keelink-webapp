@@ -28,7 +28,7 @@ export default function HowItWorksSection(props: HowItWorksSectionProps) {
               is correctly parsed, the credentials are, firstly, encrypted with
               an <b>RSA {DEFAULT_KEY_SIZE} bit</b> public key and then sent to a
               database and associated with{" "}
-              <i>`&apos;`yourpersonalanduniquesessionid`&apos;`</i>.{" "}
+              <i>&apos;yourpersonalanduniquesessionid&apos;</i>.{" "}
               <b>No other information are sent over network</b>,{" "}
               <b>that is important for you</b> because it is essential for me to
               maintain your credentials as safe as possible. More security for
@@ -57,7 +57,7 @@ export default function HowItWorksSection(props: HowItWorksSectionProps) {
         </li>
       </ul>
       <p>
-        That`&apos;`s all! But if you don`&apos;`t trust me let`&apos;`s see the{" "}
+        That&apos;s all! But if you don&apos;t trust me let&apos;s see the{" "}
         <a href="https://github.com/andreacioni/KeeLink">source code</a>
         <br />
         You will find there also instructions to self-host the web application.
