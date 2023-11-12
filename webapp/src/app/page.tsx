@@ -37,6 +37,7 @@ import {
   saveKeyPair,
   setSavedKeySize,
 } from "./data";
+import Tooltip from "./components/icon_with_tooltip";
 
 const INVALIDATE_TIMEOUT_SEC = 50;
 const REQUEST_INTERVAL = 2000;
@@ -471,7 +472,9 @@ export default function Home() {
 
             <div className="row">
               <center className="twelve columns">
-                <QrCodeImage state={qrCodeState} sid={sessionId} />
+                <Tooltip text={sessionId || ""}>
+                  <QrCodeImage state={qrCodeState} sid={sessionId} />
+                </Tooltip>
               </center>
             </div>
 
@@ -548,23 +551,24 @@ export default function Home() {
                 </p>
               </div>
             </div>
-
-            <div className="row">
-              <div className="twelve columns">
-                <center>
-                  {keySize && (
-                    <KeySizeSelector
-                      currentSize={keySize!}
-                      onSelect={(ks) => {
-                        clearKeyPair();
-                        setSavedKeySize(ks);
-                        refreshPage();
-                      }}
-                    />
-                  )}
-                </center>
+            {["waiting_credentials", "invalidated"].includes(labelState) && (
+              <div className="row">
+                <div className="twelve columns">
+                  <center>
+                    {keySize && (
+                      <KeySizeSelector
+                        currentSize={keySize!}
+                        onSelect={(ks) => {
+                          clearKeyPair();
+                          setSavedKeySize(ks);
+                          refreshPage();
+                        }}
+                      />
+                    )}
+                  </center>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="row">
               <div className="twelve columns">&nbsp;</div>
