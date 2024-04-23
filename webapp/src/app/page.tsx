@@ -29,6 +29,7 @@ const REMINDER_DELETE_CLIPBOARD = 10000;
 
 const LOCAL_STORAGE_PRIVATE_NAME = "private_key";
 const LOCAL_STORAGE_PUBLIC_NAME = "public_key";
+const LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED = "domain_changed_checked";
 
 const GENERATION_WAIT_TIME = 10 * 1000;
 
@@ -60,6 +61,8 @@ export default function Home() {
   const [username, setUsername] = useState<string>();
   const [password, setPassword] = useState<string>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
+  const [domainPopupChecked, setDomainPopupChecked] =
+    useState<boolean>(false);
 
   const howToRef = useRef<any>();
   const howItWorksRef = useRef<any>();
@@ -83,6 +86,48 @@ export default function Home() {
     clip.on("success", (e) => console.log(e));
     clip.on("error", (e) => console.error(e));
   });*/
+
+  useEffect(() => {
+    const goToNewDomain = async () => {
+      window.location.href = "https://keelink.fly.dev";
+    }
+    const confirmReadPopup = async () => {
+      return await swal.fire({
+        title: "🏗️ Domain moving 🏗️",
+        html: "Dear user, keelink.cloud is moving to a new domain! <br><br> Unfortunately domain costs, and investing money each year to renew it is no longer possible for me. Said that, by June 16th 2024, <b>keelink.cloud</b> domain is going to be dismissed. <br><br> However KeeLink will continue to exist under a new free domain: <b>https://keelink.fly.dev</b>",
+        input: "checkbox",
+        inputValue: 0,
+        inputPlaceholder: `
+      Don't show up again
+    `,
+        confirmButtonText: `
+      Continue to new domain&nbsp;<i class="fa fa-arrow-right"></i>
+    `,
+      });
+    };
+
+    const showPopup =
+      localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) !== "true";
+
+    if (
+      showPopup &&
+      (document.URL.includes("keelink.cloud") ||
+        document.URL.includes("localhost"))
+    ) {
+      confirmReadPopup().then(({ value, isConfirmed }) => {
+        if (isConfirmed) {
+          if (value) {
+            localStorage.setItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED, "true");
+          }
+          goToNewDomain()
+        } else {
+          setDomainPopupChecked(true);
+        }
+      });
+    } else {
+      goToNewDomain()
+    }
+  }, []);
 
   // Once the key has been loaded/generated, initialize and wait for credentials to arrive
   useEffect(() => {
@@ -309,7 +354,7 @@ export default function Home() {
       });
     }
 
-    if (didInitUseEffect1) return;
+    if (didInitUseEffect1 || !domainPopupChecked) return;
 
     setLabelState("key_generation");
     setQrCodeState("generating");
@@ -338,7 +383,7 @@ export default function Home() {
     return () => {
       workerRef.current?.terminate();
     };
-  }, [keySize, sessionId]);
+  }, [keySize, sessionId, domainPopupChecked]);
 
   useEffect(() => {
     if (
