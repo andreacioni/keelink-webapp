@@ -61,8 +61,7 @@ export default function Home() {
   const [username, setUsername] = useState<string>();
   const [password, setPassword] = useState<string>();
   const [qrCodeState, setQrCodeState] = useState<QrCodeState>("generating");
-  const [domainPopupChecked, setDomainPopupChecked] =
-    useState<boolean>(false);
+  const [domainPopupChecked, setDomainPopupChecked] = useState<boolean>(false);
 
   const howToRef = useRef<any>();
   const howItWorksRef = useRef<any>();
@@ -90,7 +89,7 @@ export default function Home() {
   useEffect(() => {
     const goToNewDomain = async () => {
       window.location.href = "https://keelink.fly.dev";
-    }
+    };
     const confirmReadPopup = async () => {
       return await swal.fire({
         title: "🏗️ Domain moving 🏗️",
@@ -107,25 +106,30 @@ export default function Home() {
     };
 
     const showPopup =
-      (localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) !== "true") && !document.URL.includes("keelink.fly.dev");
+      document.URL.includes("keelink.cloud") ||
+      document.URL.includes("localhost");
 
-    if (
-      showPopup &&
-      (document.URL.includes("keelink.cloud") ||
-        document.URL.includes("localhost"))
-    ) {
-      confirmReadPopup().then(({ value, isConfirmed }) => {
-        if (isConfirmed) {
-          if (value) {
-            localStorage.setItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED, "true");
+    const automaticRedirectAccepted =
+      localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) === "true";
+
+    if (showPopup && !automaticRedirectAccepted) {
+      if (!automaticRedirectAccepted) {
+        confirmReadPopup().then(({ value, isConfirmed }) => {
+          if (isConfirmed) {
+            if (value) {
+              localStorage.setItem(
+                LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED,
+                "true"
+              );
+            }
+            goToNewDomain();
+          } else {
+            setDomainPopupChecked(true);
           }
-          goToNewDomain()
-        } else {
-          setDomainPopupChecked(true);
-        }
-      });
-    } else {
-      goToNewDomain()
+        });
+      } else {
+        goToNewDomain();
+      }
     }
   }, []);
 
