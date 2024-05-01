@@ -107,7 +107,7 @@ export default function Home() {
     };
 
     const showPopup =
-      localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) !== "true";
+      (localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) !== "true") && document.URL.includes("keelink.fly.dev");
 
     if (
       showPopup &&
