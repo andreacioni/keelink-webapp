@@ -112,7 +112,7 @@ export default function Home() {
     const automaticRedirectAccepted =
       localStorage.getItem(LOCAL_STORAGE_DOMAIN_CHANGED_CHECKED) === "true";
 
-    if (showPopup && !automaticRedirectAccepted) {
+    if (showPopup) {
       if (!automaticRedirectAccepted) {
         confirmReadPopup().then(({ value, isConfirmed }) => {
           if (isConfirmed) {
@@ -130,6 +130,8 @@ export default function Home() {
       } else {
         goToNewDomain();
       }
+    } else {
+      setDomainPopupChecked(true);
     }
   }, []);
 
